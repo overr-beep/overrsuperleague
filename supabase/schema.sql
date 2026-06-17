@@ -83,6 +83,7 @@ create index if not exists matches_scheduled_at_idx on public.matches(scheduled_
 create index if not exists transfers_player_id_idx on public.transfers(player_id);
 
 grant usage on schema public to anon, authenticated;
+grant select on public.clubs to anon;
 grant select on public.profiles to authenticated;
 grant select, update on public.clubs to authenticated;
 grant select on public.players to authenticated;
@@ -163,6 +164,12 @@ drop policy if exists "Authenticated users can read clubs" on public.clubs;
 create policy "Authenticated users can read clubs"
 on public.clubs for select
 to authenticated
+using (true);
+
+drop policy if exists "Anonymous users can read clubs for status" on public.clubs;
+create policy "Anonymous users can read clubs for status"
+on public.clubs for select
+to anon
 using (true);
 
 drop policy if exists "Club owners can update their club" on public.clubs;
