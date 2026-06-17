@@ -91,6 +91,79 @@ where not exists (
     and existing.last_name = p.last_name
 );
 
+update public.players
+set
+  position = case
+    when position in ('GK', 'BR') then 'BR'
+    when position in ('CB', 'RB', 'LB', 'OBR') then 'OBR'
+    when position in ('CM', 'CDM', 'CAM', 'POM') then 'POM'
+    else 'NAP'
+  end,
+  attack_rating = case
+    when position in ('ST', 'RW', 'LW', 'CAM', 'NAP') then greatest(overall - 2, 1)
+    when position in ('CM', 'CDM', 'POM') then greatest(overall - 8, 1)
+    when position in ('CB', 'RB', 'LB', 'OBR') then greatest(overall - 18, 1)
+    else greatest(overall - 30, 1)
+  end,
+  defense_rating = case
+    when position in ('GK', 'BR') then greatest(overall + 4, 1)
+    when position in ('CB', 'RB', 'LB', 'OBR') then greatest(overall - 1, 1)
+    when position in ('CM', 'CDM', 'POM') then greatest(overall - 8, 1)
+    else greatest(overall - 25, 1)
+  end,
+  price = case
+    when price = 0 then value
+    else price
+  end;
+
+insert into public.players (
+  club_id,
+  first_name,
+  last_name,
+  position,
+  age,
+  overall,
+  attack_rating,
+  defense_rating,
+  value,
+  price,
+  wage
+)
+select null, p.first_name, p.last_name, p.position, p.age, p.overall, p.attack_rating, p.defense_rating, p.value, p.price, p.wage
+from (
+  values
+    ('Andre', 'Mbele', 'NAP', 24, 76, 78, 51, 18000000, 15000000, 52000),
+    ('Matteo', 'Lombardi', 'POM', 27, 75, 70, 66, 14000000, 12000000, 47000),
+    ('Sven', 'Meier', 'OBR', 29, 74, 55, 76, 10000000, 8500000, 39000),
+    ('Riku', 'Arai', 'BR', 23, 73, 42, 77, 9000000, 7000000, 33000),
+    ('Bruno', 'Ferreira', 'NAP', 22, 78, 80, 53, 26000000, 23000000, 71000),
+    ('Nabil', 'Cherif', 'POM', 25, 77, 73, 68, 21000000, 18000000, 63000),
+    ('Dylan', 'OConnor', 'OBR', 26, 72, 50, 73, 7000000, 5500000, 28000),
+    ('Victor', 'Santos', 'NAP', 30, 74, 76, 47, 9000000, 6000000, 36000),
+    ('Milos', 'Jankovic', 'POM', 21, 73, 69, 63, 12000000, 10000000, 32000),
+    ('Ethan', 'Brooks', 'OBR', 20, 71, 48, 72, 8500000, 7500000, 25000),
+    ('Adil', 'Rahmani', 'NAP', 19, 72, 75, 45, 13000000, 11500000, 30000),
+    ('Leandro', 'Sousa', 'POM', 28, 76, 72, 67, 16000000, 13000000, 52000),
+    ('Ivan', 'Kozlov', 'BR', 31, 75, 44, 79, 7500000, 5000000, 41000),
+    ('Felipe', 'Morales', 'OBR', 24, 73, 52, 75, 11000000, 9000000, 35000),
+    ('Tom', 'de Vries', 'POM', 23, 74, 70, 65, 15000000, 12500000, 43000),
+    ('Kofi', 'Boateng', 'NAP', 26, 77, 79, 50, 22000000, 19000000, 66000),
+    ('Luka', 'Maric', 'OBR', 27, 75, 54, 77, 13000000, 11000000, 46000),
+    ('Noel', 'Fischer', 'POM', 20, 71, 67, 61, 9000000, 7600000, 27000),
+    ('Paulo', 'Nunes', 'NAP', 25, 75, 77, 48, 16000000, 13500000, 48000),
+    ('Amir', 'Saleh', 'OBR', 22, 72, 49, 74, 9500000, 8200000, 30000),
+    ('George', 'Miller', 'BR', 24, 72, 40, 76, 8000000, 6500000, 31000),
+    ('Sergio', 'Castro', 'POM', 29, 76, 72, 66, 12000000, 9000000, 45000),
+    ('Daniel', 'Kim', 'NAP', 21, 74, 77, 46, 15000000, 13000000, 39000),
+    ('Yann', 'Rousseau', 'OBR', 30, 74, 53, 76, 8500000, 6000000, 38000)
+) as p(first_name, last_name, position, age, overall, attack_rating, defense_rating, value, price, wage)
+where not exists (
+  select 1
+  from public.players existing
+  where existing.first_name = p.first_name
+    and existing.last_name = p.last_name
+);
+
 insert into public.matches (home_club_id, away_club_id, scheduled_at, home_score, away_score, status)
 select home.id, away.id, m.scheduled_at::timestamptz, m.home_score, m.away_score, m.status::public.match_status
 from (

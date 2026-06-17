@@ -43,3 +43,26 @@ export async function getPlayersByClubId(clubId: string): Promise<{
     error: error?.message ?? null,
   };
 }
+
+export async function getFreeAgents(): Promise<{
+  data: Player[];
+  error: string | null;
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return { data: [], error: "Supabase environment variables are not set." };
+  }
+
+  const { data, error } = await supabase
+    .from("players")
+    .select("*")
+    .is("club_id", null)
+    .order("overall", { ascending: false })
+    .order("price", { ascending: true });
+
+  return {
+    data: (data ?? []) as Player[],
+    error: error?.message ?? null,
+  };
+}

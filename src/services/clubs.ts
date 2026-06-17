@@ -14,12 +14,21 @@ export async function getClubs(): Promise<{
   const { data, error } = await supabase
     .from("clubs")
     .select("*")
+    .order("league_points", { ascending: false })
+    .order("goals_for", { ascending: false })
     .order("name", { ascending: true });
 
   return {
     data: (data ?? []) as Club[],
     error: error?.message ?? null,
   };
+}
+
+export async function getLeagueTable(): Promise<{
+  data: Club[];
+  error: string | null;
+}> {
+  return getClubs();
 }
 
 export async function getClubById(id: string): Promise<{

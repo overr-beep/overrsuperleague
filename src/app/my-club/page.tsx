@@ -3,11 +3,16 @@ import { redirect } from "next/navigation";
 import { AuthNav } from "@/components/AuthNav";
 import { getCurrentUser } from "@/services/auth";
 import { getClubByOwnerId } from "@/services/clubs";
+import { getLineupByClubId } from "@/services/lineups";
 import { getMatchesByClubId } from "@/services/matches";
 import { getPlayersByClubId } from "@/services/players";
 import type { Club, Match } from "@/types/database";
 import { formatMoney } from "@/utils/formatMoney";
-import { GenerateStarterSquadForm, ManageClubForm } from "./MyClubForms";
+import {
+  GenerateStarterSquadForm,
+  LineupForm,
+  ManageClubForm,
+} from "./MyClubForms";
 
 export const dynamic = "force-dynamic";
 
@@ -53,9 +58,10 @@ export default async function MyClubPage() {
     );
   }
 
-  const [playersResult, matchesResult] = await Promise.all([
+  const [playersResult, matchesResult, lineupResult] = await Promise.all([
     getPlayersByClubId(club.id),
     getMatchesByClubId(club.id),
+    getLineupByClubId(club.id),
   ]);
 
   const players = playersResult.data;
@@ -198,6 +204,31 @@ export default async function MyClubPage() {
             )}
           </section>
         </div>
+
+        <section className="mt-6 rounded-lg border border-white/10 bg-white/[0.04] p-5">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold">Starting XI</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                Choose exactly 11 players. One of them must be a goalkeeper.
+              </p>
+            </div>
+            <span className="text-sm text-slate-400">
+              {lineupResult.data.length}/11 selected
+            </span>
+          </div>
+          {lineupResult.error ? (
+            <p className="rounded-md border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+              {lineupResult.error}
+            </p>
+          ) : players.length < 11 ? (
+            <p className="rounded-md border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+              Your squad needs at least 11 players before saving a lineup.
+            </p>
+          ) : (
+            <LineupForm players={players} lineup={lineupResult.data} />
+          )}
+        </section>
 
         <section className="mt-6 rounded-lg border border-white/10 bg-white/[0.04] p-5">
           <h2 className="text-xl font-bold">Matches</h2>

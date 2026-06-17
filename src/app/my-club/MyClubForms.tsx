@@ -4,8 +4,11 @@ import { useActionState } from "react";
 import {
   generateStarterSquadAction,
   initialActionState,
+  saveLineupAction,
   updateMyClubAction,
 } from "./actions";
+import type { Lineup, Player } from "@/types/database";
+import { normalizePosition } from "@/utils/positions";
 
 export function ManageClubForm({
   name,
@@ -92,6 +95,66 @@ export function GenerateStarterSquadForm() {
       ) : null}
       {state.success ? (
         <p className="mt-4 rounded-md border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">
+          {state.success}
+        </p>
+      ) : null}
+    </form>
+  );
+}
+
+export function LineupForm({
+  players,
+  lineup,
+}: {
+  players: Player[];
+  lineup: Lineup[];
+}) {
+  const [state, formAction, pending] = useActionState(
+    saveLineupAction,
+    initialActionState,
+  );
+  const selectedIds = new Set(lineup.map((item) => item.player_id));
+
+  return (
+    <form action={formAction} className="grid gap-3">
+      <div className="grid gap-2 md:grid-cols-2">
+        {players.map((player) => (
+          <label
+            key={player.id}
+            className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-slate-950/55 px-4 py-3 text-sm"
+          >
+            <span>
+              <span className="font-semibold text-white">
+                {player.first_name} {player.last_name}
+              </span>
+              <span className="ml-2 text-slate-400">
+                {normalizePosition(player.position)} · {player.overall}
+              </span>
+            </span>
+            <input
+              name="playerIds"
+              type="checkbox"
+              value={player.id}
+              defaultChecked={selectedIds.has(player.id)}
+              className="h-4 w-4 accent-emerald-300"
+            />
+          </label>
+        ))}
+      </div>
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-md bg-emerald-300 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {pending ? "Saving lineup..." : "Save starting XI"}
+      </button>
+      {state.error ? (
+        <p className="rounded-md border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+          {state.error}
+        </p>
+      ) : null}
+      {state.success ? (
+        <p className="rounded-md border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">
           {state.success}
         </p>
       ) : null}

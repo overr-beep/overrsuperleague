@@ -1,6 +1,15 @@
 import type { Player } from "@/types/database";
+import { normalizePosition } from "./positions";
 
-export type StarterPlayerInput = Omit<Player, "id" | "club_id" | "created_at">;
+export type StarterPlayerInput = Omit<
+  Player,
+  | "id"
+  | "club_id"
+  | "created_at"
+  | "attack_rating"
+  | "defense_rating"
+  | "price"
+>;
 
 export const starterSquad: StarterPlayerInput[] = [
   {
@@ -144,5 +153,16 @@ export function buildStarterSquadRows(clubId: string) {
   return starterSquad.map((player) => ({
     ...player,
     club_id: clubId,
+    position: normalizePosition(player.position),
+    attack_rating:
+      normalizePosition(player.position) === "NAP"
+        ? player.overall
+        : Math.max(player.overall - 12, 1),
+    defense_rating:
+      normalizePosition(player.position) === "BR" ||
+      normalizePosition(player.position) === "OBR"
+        ? player.overall
+        : Math.max(player.overall - 14, 1),
+    price: player.value,
   }));
 }

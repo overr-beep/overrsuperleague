@@ -43,3 +43,47 @@ export async function getMatchesByClubId(clubId: string): Promise<{
     error: error?.message ?? null,
   };
 }
+
+export async function getMatchesByRound(roundNumber: number): Promise<{
+  data: Match[];
+  error: string | null;
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return { data: [], error: "Supabase environment variables are not set." };
+  }
+
+  const { data, error } = await supabase
+    .from("matches")
+    .select("*")
+    .eq("round_number", roundNumber)
+    .order("scheduled_at", { ascending: true });
+
+  return {
+    data: (data ?? []) as Match[],
+    error: error?.message ?? null,
+  };
+}
+
+export async function getLeagueState(): Promise<{
+  currentRound: number;
+  error: string | null;
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return { currentRound: 1, error: "Supabase environment variables are not set." };
+  }
+
+  const { data, error } = await supabase
+    .from("league_state")
+    .select("current_round")
+    .eq("id", 1)
+    .maybeSingle();
+
+  return {
+    currentRound: data?.current_round ?? 1,
+    error: error?.message ?? null,
+  };
+}

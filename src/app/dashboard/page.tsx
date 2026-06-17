@@ -120,6 +120,24 @@ export default async function DashboardPage() {
               My club
             </Link>
             <Link
+              href="/league"
+              className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:border-emerald-300/70"
+            >
+              League
+            </Link>
+            <Link
+              href="/schedule"
+              className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:border-emerald-300/70"
+            >
+              Matches
+            </Link>
+            <Link
+              href="/transfers"
+              className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:border-emerald-300/70"
+            >
+              Transfers
+            </Link>
+            <Link
               href="/status"
               className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:border-emerald-300/70"
             >
