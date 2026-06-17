@@ -9,15 +9,12 @@ export type TransferActionState = {
   success: string | null;
 };
 
-export const initialTransferState: TransferActionState = {
-  error: null,
-  success: null,
-};
-
 export async function buyFreeAgentAction(
-  _previousState: TransferActionState,
+  previousState: TransferActionState,
   formData: FormData,
 ): Promise<TransferActionState> {
+  void previousState;
+
   const supabase = await createServerSupabaseClient();
 
   if (!supabase) {

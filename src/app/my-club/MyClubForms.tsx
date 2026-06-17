@@ -3,12 +3,17 @@
 import { useActionState } from "react";
 import {
   generateStarterSquadAction,
-  initialActionState,
   saveLineupAction,
   updateMyClubAction,
 } from "./actions";
+import type { MyClubActionState } from "./actions";
 import type { Lineup, Player } from "@/types/database";
 import { normalizePosition } from "@/utils/positions";
+
+const initialActionState: MyClubActionState = {
+  error: null,
+  success: null,
+};
 
 export function ManageClubForm({
   name,

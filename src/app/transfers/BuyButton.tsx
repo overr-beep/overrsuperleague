@@ -1,7 +1,13 @@
 "use client";
 
 import { useActionState } from "react";
-import { buyFreeAgentAction, initialTransferState } from "./actions";
+import { buyFreeAgentAction } from "./actions";
+import type { TransferActionState } from "./actions";
+
+const initialTransferState: TransferActionState = {
+  error: null,
+  success: null,
+};
 
 export function BuyButton({ playerId }: { playerId: string }) {
   const [state, formAction, pending] = useActionState(

@@ -11,13 +11,6 @@ export type MyClubActionState = {
   success: string | null;
 };
 
-const initialActionState: MyClubActionState = {
-  error: null,
-  success: null,
-};
-
-export { initialActionState };
-
 function makeShortName(name: string, userId: string) {
   const base = name
     .replace(/[^a-zA-Z0-9 ]/g, "")
@@ -171,9 +164,11 @@ export async function generateStarterSquadAction(
 }
 
 export async function saveLineupAction(
-  _previousState: MyClubActionState,
+  previousState: MyClubActionState,
   formData: FormData,
 ): Promise<MyClubActionState> {
+  void previousState;
+
   const { supabase, club, error: setupError } = await getOwnedClub();
 
   if (setupError || !supabase || !club) {
