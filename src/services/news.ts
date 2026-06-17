@@ -17,6 +17,17 @@ export async function getNewsFeed(limit = 8): Promise<{
     .order("created_at", { ascending: false })
     .limit(limit);
 
+  if (
+    error &&
+    (error.code === "PGRST205" ||
+      error.message.toLowerCase().includes("news_feed"))
+  ) {
+    return {
+      data: [],
+      error: null,
+    };
+  }
+
   return {
     data: (data ?? []) as NewsFeedItem[],
     error: error?.message ?? null,
