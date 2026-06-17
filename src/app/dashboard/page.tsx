@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthNav } from "@/components/AuthNav";
 import { getClubs } from "@/services/clubs";
 import { getMatches } from "@/services/matches";
 import { getPlayers } from "@/services/players";
@@ -93,12 +94,15 @@ export default async function DashboardPage() {
             </p>
             <h1 className="mt-2 text-4xl font-black">Dashboard</h1>
           </div>
-          <Link
-            href="/status"
-            className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:border-emerald-300/70"
-          >
-            Status bazy
-          </Link>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Link
+              href="/status"
+              className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:border-emerald-300/70"
+            >
+              Status bazy
+            </Link>
+            <AuthNav />
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

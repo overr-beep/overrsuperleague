@@ -155,6 +155,12 @@ to authenticated
 using (id = auth.uid())
 with check (id = auth.uid());
 
+drop policy if exists "Users can insert their profile" on public.profiles;
+create policy "Users can insert their profile"
+on public.profiles for insert
+to authenticated
+with check (id = auth.uid());
+
 drop policy if exists "Admins can manage profiles" on public.profiles;
 create policy "Admins can manage profiles"
 on public.profiles for all

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthNav } from "@/components/AuthNav";
 import { NavLink } from "@/components/NavLink";
 
 export default function Home() {
@@ -6,13 +7,17 @@ export default function Home() {
     <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,#0f3d38,transparent_34%),linear-gradient(135deg,#07090f_0%,#101522_58%,#111827_100%)]">
       <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
         <nav className="flex items-center justify-between gap-4">
-          <Link href="/" className="text-sm font-semibold uppercase tracking-wider text-emerald-200">
+          <Link
+            href="/"
+            className="text-sm font-semibold uppercase tracking-wider text-emerald-200"
+          >
             Overr Super League
           </Link>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <NavLink href="/dashboard">Dashboard</NavLink>
-            <NavLink href="/status">Status bazy</NavLink>
-            <NavLink href="/login">Logowanie</NavLink>
+            <NavLink href="/status">Database status</NavLink>
+            <NavLink href="/account">Account</NavLink>
+            <AuthNav />
           </div>
         </nav>
 
@@ -25,29 +30,29 @@ export default function Home() {
               Overr Super League
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-              Techniczny fundament prywatnej ligi menedzerskiej dla 10-16
-              znajomych: kluby, zawodnicy, mecze, transfery i Supabase gotowy
-              do dalszego rozwoju.
+              Technical foundation for a private football manager league:
+              clubs, players, matches, transfers and Supabase auth ready for the
+              next game systems.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/dashboard"
                 className="rounded-md bg-emerald-300 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-200"
               >
-                Otwórz dashboard
+                Open dashboard
               </Link>
               <Link
                 href="/status"
                 className="rounded-md border border-white/15 px-5 py-3 text-sm font-bold text-white transition hover:border-emerald-300/70"
               >
-                Sprawdź bazę
+                Check database
               </Link>
             </div>
           </div>
 
           <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/40">
             <div className="grid grid-cols-2 gap-3">
-              {["Season 01", "16 clubs", "Live market", "Match weeks"].map(
+              {["Season 01", "10 clubs", "Live market", "Match weeks"].map(
                 (label) => (
                   <div
                     key={label}
