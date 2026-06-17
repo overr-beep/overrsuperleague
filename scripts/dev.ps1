@@ -5,9 +5,27 @@ Set-Location $ProjectRoot
 
 $Port = 3000
 $Connections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+$ProcessIds = @()
 
 foreach ($Connection in $Connections) {
-  $Process = Get-Process -Id $Connection.OwningProcess -ErrorAction SilentlyContinue
+  $ProcessIds += $Connection.OwningProcess
+}
+
+$NetstatLines = netstat -ano | Select-String "LISTENING" | Select-String ":$Port"
+
+foreach ($Line in $NetstatLines) {
+  $Parts = ($Line.ToString() -split "\s+") | Where-Object { $_ -ne "" }
+  $PidText = $Parts[-1]
+
+  if ($PidText -match "^\d+$") {
+    $ProcessIds += [int]$PidText
+  }
+}
+
+$ProcessIds = $ProcessIds | Sort-Object -Unique
+
+foreach ($ProcessId in $ProcessIds) {
+  $Process = Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
 
   if ($null -eq $Process) {
     continue
