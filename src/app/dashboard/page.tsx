@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AuthNav } from "@/components/AuthNav";
-import { getClubs } from "@/services/clubs";
+import { getCurrentUser } from "@/services/auth";
+import { getClubByOwnerId, getClubs } from "@/services/clubs";
 import { getMatches } from "@/services/matches";
 import { getPlayers } from "@/services/players";
 import type { Club, Match, Player } from "@/types/database";
@@ -61,6 +63,18 @@ function DataWarning({ message }: { message: string }) {
 }
 
 export default async function DashboardPage() {
+  const { user } = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login?next=/dashboard");
+  }
+
+  const { data: managerClub } = await getClubByOwnerId(user.id);
+
+  if (!managerClub) {
+    redirect("/create-club");
+  }
+
   const [clubsResult, playersResult, matchesResult] = await Promise.all([
     getClubs(),
     getPlayers(),
@@ -93,6 +107,9 @@ export default async function DashboardPage() {
               Manager panel
             </p>
             <h1 className="mt-2 text-4xl font-black">Dashboard</h1>
+            <p className="mt-2 text-sm text-slate-400">
+              Your club: {managerClub.name}
+            </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <Link

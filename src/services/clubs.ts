@@ -43,3 +43,25 @@ export async function getClubById(id: string): Promise<{
     error: error?.message ?? null,
   };
 }
+
+export async function getClubByOwnerId(ownerId: string): Promise<{
+  data: Club | null;
+  error: string | null;
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return { data: null, error: "Supabase environment variables are not set." };
+  }
+
+  const { data, error } = await supabase
+    .from("clubs")
+    .select("*")
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  return {
+    data: (data ?? null) as Club | null,
+    error: error?.message ?? null,
+  };
+}

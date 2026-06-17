@@ -78,6 +78,9 @@ create table if not exists public.transfers (
 );
 
 create index if not exists clubs_owner_id_idx on public.clubs(owner_id);
+create unique index if not exists clubs_owner_id_unique_idx
+on public.clubs(owner_id)
+where owner_id is not null;
 create index if not exists players_club_id_idx on public.players(club_id);
 create index if not exists matches_scheduled_at_idx on public.matches(scheduled_at);
 create index if not exists transfers_player_id_idx on public.transfers(player_id);
@@ -185,6 +188,12 @@ create policy "Club owners can update their club"
 on public.clubs for update
 to authenticated
 using (owner_id = auth.uid())
+with check (owner_id = auth.uid());
+
+drop policy if exists "Authenticated users can create their club" on public.clubs;
+create policy "Authenticated users can create their club"
+on public.clubs for insert
+to authenticated
 with check (owner_id = auth.uid());
 
 drop policy if exists "Admins can manage clubs" on public.clubs;
