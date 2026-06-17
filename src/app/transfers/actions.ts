@@ -113,6 +113,7 @@ export async function buyFreeAgentAction(
 
   revalidatePath("/transfers");
   revalidatePath("/my-club");
+  revalidatePath("/squad");
   revalidatePath("/dashboard");
 
   return {

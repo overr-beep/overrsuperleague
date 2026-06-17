@@ -149,97 +149,165 @@ export function LineupForm({
   return (
     <form action={formAction} className="grid gap-5">
       <fieldset disabled={pending || isLocked} className="grid gap-5">
-        <div>
-          <label
-            htmlFor="formation"
-            className="text-sm font-semibold text-slate-200"
-          >
-            Formation
-          </label>
-          <select
-            id="formation"
-            name="formation"
-            value={selectedFormation}
-            onChange={(event) => setSelectedFormation(event.target.value)}
-            className="game-input mt-2"
-          >
-            {Object.keys(FORMATIONS).map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </div>
+        <div className="grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)]">
+          <aside className="game-panel-soft p-5">
+            <p className="game-kicker">Team sheet</p>
+            <h2 className="mt-2 text-2xl font-black text-white">
+              {selectedFormation}
+            </h2>
+            <label
+              htmlFor="formation"
+              className="mt-5 block text-sm font-semibold text-slate-200"
+            >
+              Formation
+            </label>
+            <select
+              id="formation"
+              name="formation"
+              value={selectedFormation}
+              onChange={(event) => setSelectedFormation(event.target.value)}
+              className="game-input mt-2"
+            >
+              {Object.keys(FORMATIONS).map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+            <div className="mt-5 grid gap-2 text-sm">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <span className="text-slate-400">Starters</span>
+                <span className="font-black text-teal-200">11</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <span className="text-slate-400">Bench</span>
+                <span className="font-black text-teal-200">Max 5</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Lock</span>
+                <span className="font-black text-amber-200">30 min</span>
+              </div>
+            </div>
+          </aside>
 
-        <div className="grid gap-3 md:grid-cols-2">
-          {formationSlots.map((slotPosition, index) => {
-            const candidates = playersByPosition.get(slotPosition) ?? [];
-            const savedPlayerId = savedStarters[index]?.player_id ?? "";
+          <div className="relative min-h-[650px] overflow-hidden rounded-md border border-teal-300/25 bg-[#123f34] shadow-2xl shadow-black/30">
+            <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.035)_0_96px,rgba(0,0,0,0.05)_96px_192px)]" />
+            <div className="absolute inset-8 rounded-md border-2 border-white/45" />
+            <div className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/35" />
+            <div className="absolute left-1/2 top-8 h-20 w-44 -translate-x-1/2 rounded-b-md border-x-2 border-b-2 border-white/35" />
+            <div className="absolute bottom-8 left-1/2 h-20 w-44 -translate-x-1/2 rounded-t-md border-x-2 border-t-2 border-white/35" />
 
-            return (
-              <label
-                key={`${slotPosition}-${index}`}
-                className="game-panel-soft grid gap-2 px-4 py-3 text-sm"
-              >
-                <span className="font-semibold text-white">
-                  {index + 1}. {slotPosition}
-                </span>
-                <select
-                  name={`starter_${index + 1}`}
-                  required
-                  defaultValue={savedPlayerId}
-                  className="game-input py-2"
-                >
-                  <option value="">Select player</option>
-                  {candidates.map((player) => {
-                    const available = isAvailableForMatch(player, currentRound);
+            <div className="relative z-10 grid min-h-[650px] grid-rows-[1fr_1fr_1fr_1fr] gap-6 p-6">
+              {(["NAP", "POM", "OBR", "BR"] as const).map((line) => {
+                const indexedSlots = formationSlots
+                  .map((slot, index) => ({ slot, index }))
+                  .filter((item) => item.slot === line);
 
-                    return (
-                      <option
-                        key={player.id}
-                        value={player.id}
-                        disabled={!available}
-                      >
-                        {player.first_name} {player.last_name} | OVR{" "}
-                        {player.overall} | FIT {player.fitness}%
-                      </option>
-                    );
-                  })}
-                </select>
-              </label>
-            );
-          })}
-        </div>
+                return (
+                  <div
+                    key={line}
+                    className="flex items-center justify-center gap-4"
+                  >
+                    {indexedSlots.map(({ slot, index }) => {
+                      const candidates = playersByPosition.get(slot) ?? [];
+                      const savedPlayerId = savedStarters[index]?.player_id ?? "";
+                      const selectedPlayer =
+                        players.find((player) => player.id === savedPlayerId) ??
+                        candidates[0];
 
-        <div>
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-base font-bold">Bench</h3>
-            <span className="text-xs uppercase tracking-wider text-slate-500">
-              Max 5 players
-            </span>
+                      return (
+                        <label
+                          key={`${slot}-${index}`}
+                          className="w-[132px] rounded-md border border-amber-200/70 bg-gradient-to-b from-amber-100 via-amber-300 to-yellow-600 p-2 text-slate-950 shadow-xl shadow-black/30"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-2xl font-black leading-none">
+                              {selectedPlayer?.overall ?? "--"}
+                            </span>
+                            <span className="rounded bg-slate-950/85 px-1.5 py-0.5 text-[0.65rem] font-black text-teal-200">
+                              {slot}
+                            </span>
+                          </div>
+                          <div className="mt-3 grid h-12 place-items-center rounded bg-slate-950/15 text-center text-[0.72rem] font-black uppercase leading-tight">
+                            {selectedPlayer
+                              ? `${selectedPlayer.first_name[0]}. ${selectedPlayer.last_name}`
+                              : "Empty slot"}
+                          </div>
+                          <select
+                            name={`starter_${index + 1}`}
+                            required
+                            defaultValue={savedPlayerId}
+                            className="mt-2 w-full rounded border border-slate-950/20 bg-white/85 px-1.5 py-1 text-[0.7rem] font-bold text-slate-950 outline-none"
+                          >
+                            <option value="">Select</option>
+                            {candidates.map((player) => {
+                              const available = isAvailableForMatch(
+                                player,
+                                currentRound,
+                              );
+
+                              return (
+                                <option
+                                  key={player.id}
+                                  value={player.id}
+                                  disabled={!available}
+                                >
+                                  {player.first_name} {player.last_name} |{" "}
+                                  {player.overall} | {player.fitness}%
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </label>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="grid gap-2 md:grid-cols-2">
+        </div>
+
+        <div className="rounded-md border border-white/10 bg-slate-950/70 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-black">Bench</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Pick up to five substitutes.
+              </p>
+            </div>
+            <span className="status-pill">Reserve cards</span>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2">
             {players.map((player) => (
               <label
                 key={player.id}
-                className="game-panel-soft flex items-center justify-between gap-3 px-4 py-3 text-sm"
+                className="min-w-[150px] rounded-md border border-slate-300/50 bg-gradient-to-b from-slate-100 to-slate-400 p-2 text-slate-950"
               >
-                <span>
-                  <span className="font-semibold text-white">
-                    {player.first_name} {player.last_name}
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-xl font-black leading-none">
+                    {player.overall}
                   </span>
-                  <span className="ml-2 text-slate-400">
-                    {normalizePosition(player.position)} - {player.overall} -
-                    FIT {player.fitness}%
+                  <span className="rounded bg-slate-950/85 px-1.5 py-0.5 text-[0.65rem] font-black text-teal-200">
+                    {normalizePosition(player.position)}
                   </span>
-                </span>
-                <input
-                  name="benchIds"
-                  type="checkbox"
-                  value={player.id}
-                  defaultChecked={savedBenchIds.has(player.id)}
-                  className="h-4 w-4 accent-teal-300"
-                />
+                </div>
+                <p className="mt-3 truncate text-xs font-black uppercase">
+                  {player.first_name[0]}. {player.last_name}
+                </p>
+                <p className="mt-1 text-[0.68rem] font-bold text-slate-700">
+                  FIT {player.fitness}%
+                </p>
+                <div className="mt-2 flex items-center justify-between border-t border-slate-900/20 pt-2">
+                  <span className="text-[0.68rem] font-black">SUB</span>
+                  <input
+                    name="benchIds"
+                    type="checkbox"
+                    value={player.id}
+                    defaultChecked={savedBenchIds.has(player.id)}
+                    className="h-4 w-4 accent-teal-500"
+                  />
+                </div>
               </label>
             ))}
           </div>

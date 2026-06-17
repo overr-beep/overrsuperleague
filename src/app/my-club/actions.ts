@@ -117,6 +117,7 @@ export async function updateMyClubAction(
   }
 
   revalidatePath("/my-club");
+  revalidatePath("/squad");
   revalidatePath("/dashboard");
 
   return { error: null, success: "Club updated." };
@@ -158,6 +159,7 @@ export async function generateStarterSquadAction(
   }
 
   revalidatePath("/my-club");
+  revalidatePath("/squad");
   revalidatePath("/dashboard");
 
   return { error: null, success: "Starter squad generated." };
@@ -306,6 +308,7 @@ export async function saveLineupAction(
     .eq("id", club.id);
 
   revalidatePath("/my-club");
+  revalidatePath("/squad");
   revalidatePath("/dashboard");
 
   return { error: null, success: "Lineup saved." };

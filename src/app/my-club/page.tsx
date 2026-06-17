@@ -3,18 +3,12 @@ import { redirect } from "next/navigation";
 import { DataWarning, GameShell, MetricTile } from "@/components/GameShell";
 import { getCurrentUser } from "@/services/auth";
 import { getClubByOwnerId } from "@/services/clubs";
-import { getLineupByClubId } from "@/services/lineups";
-import {
-  getLeagueState,
-  getMatchesByClubId,
-  getNextMatchByClubId,
-} from "@/services/matches";
+import { getMatchesByClubId } from "@/services/matches";
 import { getPlayersByClubId } from "@/services/players";
 import type { Club, Match } from "@/types/database";
 import { formatMoney } from "@/utils/formatMoney";
 import {
   GenerateStarterSquadForm,
-  LineupForm,
   ManageClubForm,
 } from "./MyClubForms";
 
@@ -57,28 +51,13 @@ export default async function MyClubPage() {
     );
   }
 
-  const [
-    playersResult,
-    matchesResult,
-    lineupResult,
-    leagueStateResult,
-    nextMatchResult,
-  ] = await Promise.all([
+  const [playersResult, matchesResult] = await Promise.all([
     getPlayersByClubId(club.id),
     getMatchesByClubId(club.id),
-    getLineupByClubId(club.id),
-    getLeagueState(),
-    getNextMatchByClubId(club.id),
   ]);
 
   const players = playersResult.data;
   const matches = matchesResult.data;
-  const nextMatch = nextMatchResult.data;
-  const minutesToKickoff = nextMatch
-    ? (new Date(nextMatch.scheduled_at).getTime() - Date.now()) / 60000
-    : null;
-  const isLineupLocked =
-    minutesToKickoff !== null && minutesToKickoff > 0 && minutesToKickoff <= 30;
   const squadValue = players.reduce(
     (sum, player) => sum + Number(player.value),
     0,
@@ -91,9 +70,14 @@ export default async function MyClubPage() {
       title={club.name}
       description={`${club.short_name} - ${club.city ?? "No city set"} - Formation ${club.formation}`}
       actions={
-        <Link href={`/clubs/${club.id}`} className="game-button-secondary">
-          Public club page
-        </Link>
+        <>
+          <Link href="/squad" className="game-button-primary">
+            Squad
+          </Link>
+          <Link href={`/clubs/${club.id}`} className="game-button-secondary">
+            Public club page
+          </Link>
+        </>
       }
     >
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -130,7 +114,7 @@ export default async function MyClubPage() {
 
         <section className="game-panel p-5">
           <div className="mb-4 flex items-center justify-between gap-4">
-            <h2 className="text-xl font-black">Squad hub</h2>
+            <h2 className="text-xl font-black">Squad overview</h2>
             <span className="status-pill">{players.length} players</span>
           </div>
 
@@ -145,69 +129,35 @@ export default async function MyClubPage() {
               <GenerateStarterSquadForm />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="game-table min-w-[780px]">
-                <thead>
-                  <tr>
-                    <th>Player</th>
-                    <th>Pos.</th>
-                    <th>OVR</th>
-                    <th>ATK</th>
-                    <th>DEF</th>
-                    <th>Fitness</th>
-                    <th>Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {players.map((player) => (
-                    <tr key={player.id} className="text-slate-200">
-                      <td className="font-semibold text-white">
-                        {player.first_name} {player.last_name}
-                      </td>
-                      <td>{player.position}</td>
-                      <td>
+            <div>
+              <div className="grid gap-3 md:grid-cols-3">
+                {players
+                  .slice()
+                  .sort((a, b) => b.overall - a.overall)
+                  .slice(0, 6)
+                  .map((player) => (
+                    <article key={player.id} className="game-panel-soft p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-black text-white">
+                            {player.first_name} {player.last_name}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-400">
+                            {player.position} - FIT {player.fitness}%
+                          </p>
+                        </div>
                         <span className="rating-badge">{player.overall}</span>
-                      </td>
-                      <td>{player.attack_rating}</td>
-                      <td>{player.defense_rating}</td>
-                      <td>{player.fitness}%</td>
-                      <td>{formatMoney(Number(player.value))}</td>
-                    </tr>
+                      </div>
+                    </article>
                   ))}
-                </tbody>
-              </table>
+              </div>
+              <Link href="/squad" className="game-button-secondary mt-5">
+                Open full squad board
+              </Link>
             </div>
           )}
         </section>
       </div>
-
-      <section className="game-panel mt-6 p-5">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-black">Tactics board</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Save exact formation slots and up to five substitutes.
-            </p>
-          </div>
-          <span className="status-pill">
-            {lineupResult.data.filter((item) => item.role === "starter").length}
-            /11 selected
-          </span>
-        </div>
-        {lineupResult.error ? (
-          <DataWarning message={lineupResult.error} />
-        ) : players.length < 11 ? (
-          <DataWarning message="Your squad needs at least 11 players before saving a lineup." />
-        ) : (
-          <LineupForm
-            players={players}
-            lineup={lineupResult.data}
-            formation={club.formation}
-            currentRound={leagueStateResult.currentRound}
-            isLocked={isLineupLocked}
-          />
-        )}
-      </section>
 
       <section className="game-panel mt-6 p-5">
         <h2 className="text-xl font-black">Club matches</h2>

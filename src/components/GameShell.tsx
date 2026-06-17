@@ -4,7 +4,8 @@ import { AuthNav } from "@/components/AuthNav";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", code: "HQ" },
-  { href: "/my-club", label: "My Club", code: "XI" },
+  { href: "/my-club", label: "My Club", code: "CLB" },
+  { href: "/squad", label: "Squad", code: "XI" },
   { href: "/league", label: "League", code: "TAB" },
   { href: "/schedule", label: "Matches", code: "FIX" },
   { href: "/transfers", label: "Transfers", code: "MKT" },
