@@ -51,6 +51,26 @@ W Supabase SQL Editor uruchom:
 
 Schema tworzy tabele `profiles`, `clubs`, `players`, `matches` i `transfers`, włącza RLS oraz dodaje podstawowe policies: zalogowani użytkownicy czytają dane ligi, właściciel klubu może edytować swój klub, a admin jest przygotowany do zarządzania danymi.
 
+Jeśli używasz Supabase CLI lokalnie:
+
+```bash
+npx supabase start
+npx supabase db reset
+```
+
+Po starcie lokalnego Supabase wpisz lokalne `API URL` oraz `anon key` do `.env.local`.
+
+## Supabase Auth
+
+W ustawieniach Supabase Auth dodaj redirect URL:
+
+```txt
+http://localhost:3000/auth/callback
+http://127.0.0.1:3000/auth/callback
+```
+
+Logowanie używa magic linka. Callback zapisuje sesję przez `@supabase/ssr`, więc strony serwerowe mogą korzystać z RLS jako zalogowany użytkownik.
+
 ## Strony
 
 - `/` - landing Overr Super League

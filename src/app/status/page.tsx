@@ -1,6 +1,8 @@
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { getClubs } from "@/services/clubs";
 
+export const dynamic = "force-dynamic";
+
 export default async function StatusPage() {
   const result = await getClubs();
   const isConnected = isSupabaseConfigured && !result.error;

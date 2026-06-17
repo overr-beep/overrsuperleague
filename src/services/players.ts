@@ -1,10 +1,12 @@
-import { supabase } from "@/lib/supabase";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Player } from "@/types/database";
 
 export async function getPlayers(): Promise<{
   data: Player[];
   error: string | null;
 }> {
+  const supabase = await createServerSupabaseClient();
+
   if (!supabase) {
     return { data: [], error: "Supabase environment variables are not set." };
   }
