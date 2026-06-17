@@ -21,3 +21,25 @@ export async function getClubs(): Promise<{
     error: error?.message ?? null,
   };
 }
+
+export async function getClubById(id: string): Promise<{
+  data: Club | null;
+  error: string | null;
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return { data: null, error: "Supabase environment variables are not set." };
+  }
+
+  const { data, error } = await supabase
+    .from("clubs")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  return {
+    data: (data ?? null) as Club | null,
+    error: error?.message ?? null,
+  };
+}

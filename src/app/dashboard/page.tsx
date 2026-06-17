@@ -149,10 +149,15 @@ export default async function DashboardPage() {
                     {topClubs.map((club) => (
                       <tr key={club.id} className="text-slate-200">
                         <td className="border-b border-white/5 py-3 font-semibold text-white">
-                          {club.name}
-                          <span className="ml-2 text-xs text-emerald-200">
-                            {club.short_name}
-                          </span>
+                          <Link
+                            href={`/clubs/${club.id}`}
+                            className="transition hover:text-emerald-200"
+                          >
+                            {club.name}
+                            <span className="ml-2 text-xs text-emerald-200">
+                              {club.short_name}
+                            </span>
+                          </Link>
                         </td>
                         <td className="border-b border-white/5 py-3">
                           {club.city ?? "-"}
