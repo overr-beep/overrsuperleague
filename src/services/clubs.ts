@@ -14,6 +14,7 @@ export async function getClubs(): Promise<{
   const { data, error } = await supabase
     .from("clubs")
     .select("*")
+    .not("owner_id", "is", null)
     .order("league_points", { ascending: false })
     .order("goals_for", { ascending: false })
     .order("name", { ascending: true });

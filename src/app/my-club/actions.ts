@@ -26,6 +26,10 @@ function makeShortName(name: string, userId: string) {
   return `${base}${suffix}`;
 }
 
+function normalizeShortName(value: string) {
+  return value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 5).toUpperCase();
+}
+
 async function getOwnedClub() {
   const supabase = await createServerSupabaseClient();
 
@@ -81,6 +85,7 @@ export async function updateMyClubAction(
   }
 
   const name = String(formData.get("name") ?? "").trim();
+  const shortName = normalizeShortName(String(formData.get("shortName") ?? ""));
   const city = String(formData.get("city") ?? "").trim();
 
   if (name.length < 3) {
@@ -95,12 +100,16 @@ export async function updateMyClubAction(
     return { error: "City can have at most 30 characters.", success: null };
   }
 
+  if (shortName.length < 2 || shortName.length > 5) {
+    return { error: "Short name must have 2-5 letters or numbers.", success: null };
+  }
+
   const { error } = await supabase
     .from("clubs")
     .update({
       name,
       city: city || null,
-      short_name: makeShortName(name, user.id),
+      short_name: shortName || makeShortName(name, user.id),
     })
     .eq("id", club.id)
     .eq("owner_id", user.id);

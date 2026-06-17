@@ -108,7 +108,11 @@ export default async function MyClubPage() {
             Manager-facing identity and public club metadata.
           </p>
           <div className="mt-5">
-            <ManageClubForm name={club.name} city={club.city} />
+              <ManageClubForm
+                name={club.name}
+                shortName={club.short_name}
+                city={club.city}
+              />
           </div>
         </section>
 

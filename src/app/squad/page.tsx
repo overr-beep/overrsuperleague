@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { DataWarning, GameShell, MetricTile } from "@/components/GameShell";
+import { DataWarning, GameShell } from "@/components/GameShell";
 import { getCurrentUser } from "@/services/auth";
 import { getClubByOwnerId } from "@/services/clubs";
 import { getLineupByClubId } from "@/services/lineups";
 import { getLeagueState, getNextMatchByClubId } from "@/services/matches";
 import { getPlayersByClubId } from "@/services/players";
-import { formatMoney } from "@/utils/formatMoney";
 import { GenerateStarterSquadForm, LineupForm } from "../my-club/MyClubForms";
 
 export const dynamic = "force-dynamic";
@@ -69,16 +68,12 @@ export default async function SquadPage() {
             players.length,
         )
       : 0;
-  const squadValue = players.reduce(
-    (sum, player) => sum + Number(player.value),
-    0,
-  );
 
   return (
     <GameShell
       eyebrow="Squad management"
       title={`${club.short_name} Squad`}
-      description="Build your starting XI, set a formation, choose the bench and check player condition before match lock."
+      description={`${club.formation} - ${startersCount}/11 starters - bench ${benchCount}/5 - squad OVR ${averageOverall || "-"}`}
       actions={
         <>
           <Link href="/my-club" className="game-button-secondary">
@@ -90,36 +85,11 @@ export default async function SquadPage() {
         </>
       }
     >
-      <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricTile
-          label="Formation"
-          value={club.formation}
-          detail={`${startersCount}/11 starters`}
-          tone="teal"
-        />
-        <MetricTile
-          label="Bench"
-          value={`${benchCount}/5`}
-          detail="Selected substitutes"
-        />
-        <MetricTile
-          label="Squad rating"
-          value={playersResult.error ? "-" : String(averageOverall)}
-          detail="Average overall"
-          tone="amber"
-        />
-        <MetricTile
-          label="Squad value"
-          value={formatMoney(squadValue)}
-          detail="Total market value"
-        />
-      </div>
-
       {nextMatch ? (
-        <section className="game-panel mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
+        <section className="game-panel mb-4 flex flex-wrap items-center justify-between gap-4 p-4">
           <div>
             <p className="game-kicker">Next fixture</p>
-            <h2 className="mt-2 text-2xl font-black">
+            <h2 className="mt-1 text-xl font-black">
               {formatDate(nextMatch.scheduled_at)}
             </h2>
           </div>
@@ -129,7 +99,7 @@ export default async function SquadPage() {
         </section>
       ) : null}
 
-      <section className="game-panel p-5">
+      <section className="game-panel p-4">
         {playersResult.error ? (
           <DataWarning message={playersResult.error} />
         ) : players.length === 0 ? (
