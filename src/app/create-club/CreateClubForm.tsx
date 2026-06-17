@@ -16,7 +16,7 @@ export function CreateClubForm() {
   return (
     <form
       action={formAction}
-      className="mt-8 max-w-lg rounded-lg border border-white/10 bg-white/[0.04] p-6"
+      className="game-panel-soft p-5"
     >
       <label htmlFor="name" className="text-sm font-semibold text-slate-200">
         Club name
@@ -28,7 +28,7 @@ export function CreateClubForm() {
         minLength={3}
         maxLength={25}
         required
-        className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-300"
+        className="game-input mt-2"
         placeholder="Example: Overr City"
       />
       <p className="mt-2 text-xs text-slate-500">3-25 characters.</p>
@@ -36,7 +36,7 @@ export function CreateClubForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-5 w-full rounded-md bg-emerald-300 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60"
+        className="game-button-primary mt-5 w-full disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? "Creating club..." : "Create my club"}
       </button>

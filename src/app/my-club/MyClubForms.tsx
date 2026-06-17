@@ -46,7 +46,7 @@ export function ManageClubForm({
           maxLength={25}
           required
           defaultValue={name}
-          className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-300"
+          className="game-input mt-2"
         />
       </div>
       <div>
@@ -59,13 +59,13 @@ export function ManageClubForm({
           type="text"
           maxLength={30}
           defaultValue={city ?? ""}
-          className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-300"
+          className="game-input mt-2"
         />
       </div>
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-emerald-300 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60"
+        className="game-button-primary disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? "Saving..." : "Save club"}
       </button>
@@ -75,7 +75,7 @@ export function ManageClubForm({
         </p>
       ) : null}
       {state.success ? (
-        <p className="rounded-md border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">
+        <p className="rounded-md border border-teal-300/20 bg-teal-300/10 px-4 py-3 text-sm text-teal-100">
           {state.success}
         </p>
       ) : null}
@@ -94,7 +94,7 @@ export function GenerateStarterSquadForm() {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-emerald-300 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60"
+        className="game-button-primary disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? "Generating..." : "Generate starter squad"}
       </button>
@@ -104,7 +104,7 @@ export function GenerateStarterSquadForm() {
         </p>
       ) : null}
       {state.success ? (
-        <p className="mt-4 rounded-md border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">
+        <p className="mt-4 rounded-md border border-teal-300/20 bg-teal-300/10 px-4 py-3 text-sm text-teal-100">
           {state.success}
         </p>
       ) : null}
@@ -161,7 +161,7 @@ export function LineupForm({
             name="formation"
             value={selectedFormation}
             onChange={(event) => setSelectedFormation(event.target.value)}
-            className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-300"
+            className="game-input mt-2"
           >
             {Object.keys(FORMATIONS).map((item) => (
               <option key={item} value={item}>
@@ -179,7 +179,7 @@ export function LineupForm({
             return (
               <label
                 key={`${slotPosition}-${index}`}
-                className="grid gap-2 rounded-md border border-white/10 bg-slate-950/55 px-4 py-3 text-sm"
+                className="game-panel-soft grid gap-2 px-4 py-3 text-sm"
               >
                 <span className="font-semibold text-white">
                   {index + 1}. {slotPosition}
@@ -188,7 +188,7 @@ export function LineupForm({
                   name={`starter_${index + 1}`}
                   required
                   defaultValue={savedPlayerId}
-                  className="rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-white outline-none focus:border-emerald-300"
+                  className="game-input py-2"
                 >
                   <option value="">Select player</option>
                   {candidates.map((player) => {
@@ -222,7 +222,7 @@ export function LineupForm({
             {players.map((player) => (
               <label
                 key={player.id}
-                className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-slate-950/55 px-4 py-3 text-sm"
+                className="game-panel-soft flex items-center justify-between gap-3 px-4 py-3 text-sm"
               >
                 <span>
                   <span className="font-semibold text-white">
@@ -238,7 +238,7 @@ export function LineupForm({
                   type="checkbox"
                   value={player.id}
                   defaultChecked={savedBenchIds.has(player.id)}
-                  className="h-4 w-4 accent-emerald-300"
+                  className="h-4 w-4 accent-teal-300"
                 />
               </label>
             ))}
@@ -256,7 +256,7 @@ export function LineupForm({
         <button
           type="submit"
           disabled={pending || isLocked}
-          className="rounded-md bg-emerald-300 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60"
+          className="game-button-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? "Saving lineup..." : "Save tactic"}
         </button>
@@ -268,7 +268,7 @@ export function LineupForm({
         </p>
       ) : null}
       {state.success ? (
-        <p className="rounded-md border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">
+        <p className="rounded-md border border-teal-300/20 bg-teal-300/10 px-4 py-3 text-sm text-teal-100">
           {state.success}
         </p>
       ) : null}

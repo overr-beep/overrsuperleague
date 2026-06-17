@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AuthNav } from "@/components/AuthNav";
+import { DataWarning, GameShell, MetricTile } from "@/components/GameShell";
 import { getCurrentUser } from "@/services/auth";
 import { getClubByOwnerId, getClubs } from "@/services/clubs";
 import { getMatches } from "@/services/matches";
@@ -13,11 +13,7 @@ import { formatMoney } from "@/utils/formatMoney";
 export const dynamic = "force-dynamic";
 
 function getClubName(clubsById: Map<string, Club>, clubId: string | null) {
-  if (!clubId) {
-    return "Free agent";
-  }
-
-  return clubsById.get(clubId)?.short_name ?? "Unknown";
+  return clubId ? clubsById.get(clubId)?.short_name ?? "Unknown" : "Free agent";
 }
 
 function getMatchLabel(match: Match, clubsById: Map<string, Club>) {
@@ -50,34 +46,6 @@ function formatCountdown(value: string) {
   return `${hours}h ${String(minutes).padStart(2, "0")}m`;
 }
 
-function StatTile({
-  label,
-  value,
-  detail,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-}) {
-  return (
-    <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-        {label}
-      </p>
-      <p className="mt-3 text-3xl font-black text-white">{value}</p>
-      <p className="mt-2 text-sm text-slate-400">{detail}</p>
-    </section>
-  );
-}
-
-function DataWarning({ message }: { message: string }) {
-  return (
-    <div className="rounded-md border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
-      {message}
-    </div>
-  );
-}
-
 export default async function DashboardPage() {
   const { user } = await getCurrentUser();
 
@@ -91,12 +59,8 @@ export default async function DashboardPage() {
     redirect("/create-club");
   }
 
-  const [clubsResult, playersResult, matchesResult, newsResult] = await Promise.all([
-    getClubs(),
-    getPlayers(),
-    getMatches(),
-    getNewsFeed(8),
-  ]);
+  const [clubsResult, playersResult, matchesResult, newsResult] =
+    await Promise.all([getClubs(), getPlayers(), getMatches(), getNewsFeed(8)]);
 
   const clubs = clubsResult.data;
   const players = playersResult.data;
@@ -149,298 +113,232 @@ export default async function DashboardPage() {
     : [];
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
-      <section className="mx-auto max-w-7xl">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-emerald-200">
-              Manager panel
-            </p>
-            <h1 className="mt-2 text-4xl font-black">Dashboard</h1>
-            <p className="mt-2 text-sm text-slate-400">
-              Your club:{" "}
-              <Link href="/my-club" className="font-semibold text-emerald-200">
-                {managerClub.name}
-              </Link>
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <Link
-              href="/my-club"
-              className="rounded-md bg-emerald-300 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-emerald-200"
-            >
-              My club
-            </Link>
-            <Link
-              href="/league"
-              className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:border-emerald-300/70"
-            >
-              League
-            </Link>
-            <Link
-              href="/schedule"
-              className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:border-emerald-300/70"
-            >
-              Matches
-            </Link>
-            <Link
-              href="/transfers"
-              className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:border-emerald-300/70"
-            >
-              Transfers
-            </Link>
-            <Link
-              href="/status"
-              className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:border-emerald-300/70"
-            >
-              Status bazy
-            </Link>
-            <AuthNav />
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Link
-            href="/my-club"
-            className="rounded-lg border border-emerald-300/30 bg-emerald-300/10 p-5 transition hover:border-emerald-200"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-200">
-              My club
-            </p>
-            <p className="mt-3 text-3xl font-black text-white">
-              {managerClub.short_name}
-            </p>
-            <p className="mt-2 text-sm text-slate-300">{managerClub.name}</p>
+    <GameShell
+      eyebrow="Manager panel"
+      title="Dashboard"
+      description={`Your club: ${managerClub.name}. Track live status, rival form, league data and transfer movement from one command screen.`}
+      actions={
+        <>
+          <Link href="/my-club" className="game-button-primary">
+            My club
           </Link>
-          <StatTile
-            label="Kluby"
-            value={String(clubs.length)}
-            detail="Aktywne zespoly w lidze"
-          />
-          <StatTile
-            label="Zawodnicy"
-            value={playersResult.error ? "-" : String(players.length)}
-            detail="Pula zawodnikow z bazy"
-          />
-          <StatTile
-            label="Budzet ligi"
-            value={formatMoney(totalBudget)}
-            detail="Suma budzetow klubow"
-          />
-          <StatTile
-            label="Wartosc kadr"
-            value={playersResult.error ? "-" : formatMoney(totalSquadValue)}
-            detail="Suma wartosci zawodnikow"
-          />
-        </div>
+          <Link href="/transfers" className="game-button-secondary">
+            Transfers
+          </Link>
+        </>
+      }
+    >
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <Link
+          href="/my-club"
+          className="game-panel border-teal-300/30 bg-teal-300/10 p-5 transition hover:border-teal-200"
+        >
+          <p className="game-kicker">My club</p>
+          <p className="mt-3 text-3xl font-black text-white">
+            {managerClub.short_name}
+          </p>
+          <p className="mt-2 text-sm text-slate-300">{managerClub.name}</p>
+        </Link>
+        <MetricTile label="Clubs" value={String(clubs.length)} detail="League teams" />
+        <MetricTile
+          label="Players"
+          value={playersResult.error ? "-" : String(players.length)}
+          detail="Database pool"
+        />
+        <MetricTile
+          label="League budget"
+          value={formatMoney(totalBudget)}
+          detail="Combined club budgets"
+          tone="amber"
+        />
+        <MetricTile
+          label="Squad value"
+          value={playersResult.error ? "-" : formatMoney(totalSquadValue)}
+          detail="Total player value"
+          tone="teal"
+        />
+      </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <section className="rounded-lg border border-emerald-300/25 bg-emerald-300/10 p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-200">
-              Live status
+      <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="game-panel border-teal-300/25 bg-teal-300/10 p-5">
+          <p className="game-kicker">Live status</p>
+          <h2 className="mt-3 text-3xl font-black">
+            {nextOwnMatch
+              ? `Next match in ${formatCountdown(nextOwnMatch.scheduled_at)}`
+              : "No upcoming match"}
+          </h2>
+          {nextOwnMatch ? (
+            <p className="mt-2 text-sm text-slate-300">
+              {getMatchLabel(nextOwnMatch, clubsById)} -{" "}
+              {formatMatchDate(nextOwnMatch.scheduled_at)}
             </p>
-            <h2 className="mt-3 text-2xl font-black">
-              {nextOwnMatch
-                ? `Next match in ${formatCountdown(nextOwnMatch.scheduled_at)}`
-                : "No upcoming match"}
-            </h2>
-            {nextOwnMatch ? (
-              <p className="mt-2 text-sm text-slate-300">
-                {getMatchLabel(nextOwnMatch, clubsById)} -{" "}
-                {formatMatchDate(nextOwnMatch.scheduled_at)}
+          ) : null}
+        </section>
+
+        <section className="game-panel p-5">
+          <p className="game-kicker text-slate-400">Rival preview</p>
+          {opponent ? (
+            <div className="mt-3">
+              <Link
+                href={`/clubs/${opponent.id}`}
+                className="text-2xl font-black transition hover:text-teal-200"
+              >
+                {opponent.name}
+              </Link>
+              <p className="mt-2 text-sm text-slate-400">
+                Manager: {opponentManager?.display_name ?? "Unknown"} - Form:{" "}
+                {opponent.wins}W {opponent.draws}D {opponent.losses}L
               </p>
-            ) : null}
-          </section>
-
-          <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Rival preview
-            </p>
-            {opponent ? (
-              <div className="mt-3">
-                <Link
-                  href={`/clubs/${opponent.id}`}
-                  className="text-2xl font-black transition hover:text-emerald-200"
-                >
-                  {opponent.name}
-                </Link>
-                <p className="mt-2 text-sm text-slate-400">
-                  Manager: {opponentManager?.display_name ?? "Unknown"} - Form:{" "}
-                  {opponent.wins}W {opponent.draws}D {opponent.losses}L
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {opponentRecentMatches.length > 0 ? (
-                    opponentRecentMatches.map((match) => (
-                      <span
-                        key={match.id}
-                        className="rounded-md border border-white/10 px-3 py-1 text-xs text-slate-300"
-                      >
-                        {match.home_score}-{match.away_score}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-slate-400">
-                      No played matches yet.
+              <div className="mt-3 flex flex-wrap gap-2">
+                {opponentRecentMatches.length > 0 ? (
+                  opponentRecentMatches.map((match) => (
+                    <span key={match.id} className="status-pill">
+                      {match.home_score}-{match.away_score}
                     </span>
-                  )}
-                </div>
+                  ))
+                ) : (
+                  <span className="text-sm text-slate-400">
+                    No played matches yet.
+                  </span>
+                )}
               </div>
-            ) : (
-              <p className="mt-3 text-sm text-slate-400">
-                Schedule a match to see rival details.
-              </p>
-            )}
-          </section>
-        </div>
-
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <h2 className="text-xl font-bold">Tabela klubow</h2>
-              <span className="text-sm text-slate-400">
-                Sortowanie: reputacja
-              </span>
             </div>
-            {clubsResult.error ? (
-              <DataWarning message={clubsResult.error} />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[620px] border-separate border-spacing-0 text-left text-sm">
-                  <thead className="text-xs uppercase tracking-wider text-slate-500">
-                    <tr>
-                      <th className="border-b border-white/10 pb-3">Klub</th>
-                      <th className="border-b border-white/10 pb-3">Miasto</th>
-                      <th className="border-b border-white/10 pb-3">Budzet</th>
-                      <th className="border-b border-white/10 pb-3">Rep.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedClubs.map((club) => (
-                      <tr
-                        key={club.id}
-                        className={
-                          club.id === managerClub.id
-                            ? "text-emerald-100"
-                            : "text-slate-200"
-                        }
-                      >
-                        <td className="border-b border-white/5 py-3 font-semibold text-white">
-                          <Link
-                            href={`/clubs/${club.id}`}
-                            className="transition hover:text-emerald-200"
-                          >
-                            {club.name}
-                            <span className="ml-2 text-xs text-emerald-200">
-                              {club.short_name}
-                            </span>
-                          </Link>
-                        </td>
-                        <td className="border-b border-white/5 py-3">
-                          {club.city ?? "-"}
-                        </td>
-                        <td className="border-b border-white/5 py-3">
-                          {formatMoney(Number(club.budget))}
-                        </td>
-                        <td className="border-b border-white/5 py-3">
-                          {club.reputation}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
+          ) : (
+            <p className="mt-3 text-sm text-slate-400">
+              Schedule a match to see rival details.
+            </p>
+          )}
+        </section>
+      </div>
 
-          <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
-            <h2 className="text-xl font-bold">Najblizsze mecze</h2>
-            <div className="mt-4 grid gap-3">
-              {matchesResult.error ? (
-                <DataWarning message={matchesResult.error} />
-              ) : upcomingMatches.length > 0 ? (
-                upcomingMatches.map((match) => (
-                  <div
-                    key={match.id}
-                    className="rounded-md border border-white/10 bg-slate-950/55 px-4 py-3"
-                  >
-                    <p className="font-semibold">{getMatchLabel(match, clubsById)}</p>
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <section className="game-panel p-5">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <h2 className="text-xl font-black">Club table</h2>
+            <span className="status-pill">Sorted by reputation</span>
+          </div>
+          {clubsResult.error ? (
+            <DataWarning message={clubsResult.error} />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="game-table min-w-[620px]">
+                <thead>
+                  <tr>
+                    <th>Club</th>
+                    <th>City</th>
+                    <th>Budget</th>
+                    <th>Rep.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedClubs.map((club) => (
+                    <tr
+                      key={club.id}
+                      className={
+                        club.id === managerClub.id
+                          ? "bg-teal-300/5 text-teal-100"
+                          : "text-slate-200"
+                      }
+                    >
+                      <td className="font-semibold text-white">
+                        <Link
+                          href={`/clubs/${club.id}`}
+                          className="transition hover:text-teal-200"
+                        >
+                          {club.name}
+                          <span className="ml-2 text-xs text-teal-200">
+                            {club.short_name}
+                          </span>
+                        </Link>
+                      </td>
+                      <td>{club.city ?? "-"}</td>
+                      <td>{formatMoney(Number(club.budget))}</td>
+                      <td className="font-black">{club.reputation}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="game-panel p-5">
+          <h2 className="text-xl font-black">Upcoming matches</h2>
+          <div className="mt-4 grid gap-3">
+            {matchesResult.error ? (
+              <DataWarning message={matchesResult.error} />
+            ) : upcomingMatches.length > 0 ? (
+              upcomingMatches.map((match) => (
+                <div key={match.id} className="game-panel-soft px-4 py-3">
+                  <p className="font-semibold">{getMatchLabel(match, clubsById)}</p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    {formatMatchDate(match.scheduled_at)} - {match.status}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-slate-400">No scheduled matches.</p>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <section className="game-panel mt-6 p-5">
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <h2 className="text-xl font-black">Top players</h2>
+          <span className="status-pill">Overall rating</span>
+        </div>
+        {playersResult.error ? (
+          <DataWarning message={playersResult.error} />
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {topPlayers.map((player: Player) => (
+              <article key={player.id} className="game-panel-soft p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-black text-white">
+                      {player.first_name} {player.last_name}
+                    </h3>
                     <p className="mt-1 text-sm text-slate-400">
-                      {formatMatchDate(match.scheduled_at)} · {match.status}
+                      {getClubName(clubsById, player.club_id)} - {player.position}
                     </p>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-slate-400">Brak zaplanowanych meczow.</p>
-              )}
-            </div>
-          </section>
-        </div>
-
-        <section className="mt-6 rounded-lg border border-white/10 bg-white/[0.04] p-5">
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <h2 className="text-xl font-bold">Top zawodnicy</h2>
-            <span className="text-sm text-slate-400">Sortowanie: overall</span>
+                  <span className="rating-badge">{player.overall}</span>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
+                  <span>{player.age} yrs</span>
+                  <span>{formatMoney(Number(player.value))}</span>
+                </div>
+              </article>
+            ))}
           </div>
-          {playersResult.error ? (
-            <DataWarning message={playersResult.error} />
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-              {topPlayers.map((player: Player) => (
-                <article
-                  key={player.id}
-                  className="rounded-md border border-white/10 bg-slate-950/55 p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-bold text-white">
-                        {player.first_name} {player.last_name}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-400">
-                        {getClubName(clubsById, player.club_id)} · {player.position}
-                      </p>
-                    </div>
-                    <span className="rounded-md bg-emerald-300 px-2 py-1 text-sm font-black text-slate-950">
-                      {player.overall}
-                    </span>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
-                    <span>{player.age} lat</span>
-                    <span>{formatMoney(Number(player.value))}</span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="mt-6 rounded-lg border border-white/10 bg-white/[0.04] p-5">
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <h2 className="text-xl font-bold">League feed</h2>
-            <span className="text-sm text-slate-400">Latest events</span>
-          </div>
-          {newsResult.error ? (
-            <DataWarning message={newsResult.error} />
-          ) : news.length > 0 ? (
-            <div className="grid gap-3">
-              {news.map((item: NewsFeedItem) => (
-                <article
-                  key={item.id}
-                  className="rounded-md border border-white/10 bg-slate-950/55 px-4 py-3"
-                >
-                  <p className="text-sm text-slate-100">{item.message}</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {formatMatchDate(item.created_at)}
-                  </p>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-400">
-              No league messages yet. Transfers and simulated matches will appear here.
-            </p>
-          )}
-        </section>
+        )}
       </section>
-    </main>
+
+      <section className="game-panel mt-6 p-5">
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <h2 className="text-xl font-black">League feed</h2>
+          <span className="status-pill">Latest events</span>
+        </div>
+        {newsResult.error ? (
+          <DataWarning message={newsResult.error} />
+        ) : news.length > 0 ? (
+          <div className="grid gap-3">
+            {news.map((item: NewsFeedItem) => (
+              <article key={item.id} className="game-panel-soft px-4 py-3">
+                <p className="text-sm text-slate-100">{item.message}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {formatMatchDate(item.created_at)}
+                </p>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-400">
+            No league messages yet. Transfers and simulated matches will appear here.
+          </p>
+        )}
+      </section>
+    </GameShell>
   );
 }

@@ -1,3 +1,4 @@
+import { DataWarning, GameShell } from "@/components/GameShell";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { getClubs } from "@/services/clubs";
 
@@ -8,50 +9,47 @@ export default async function StatusPage() {
   const isConnected = isSupabaseConfigured && !result.error;
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
-      <section className="mx-auto max-w-4xl">
-        <p className="text-sm font-semibold uppercase tracking-wider text-emerald-200">
-          Supabase
-        </p>
-        <h1 className="mt-2 text-4xl font-black">Status bazy</h1>
-
-        <div className="mt-8 rounded-lg border border-white/10 bg-white/[0.04] p-6">
-          <div className="flex items-center gap-3">
-            <span
-              className={`h-3 w-3 rounded-full ${
-                isConnected ? "bg-emerald-300" : "bg-amber-300"
-              }`}
-            />
-            <p className="font-semibold">
-              {isConnected
-                ? "Połączenie działa i tabela clubs odpowiada."
-                : "Aplikacja działa, ale Supabase lub tabela clubs nie są jeszcze gotowe."}
-            </p>
-          </div>
-
-          {result.error ? (
-            <pre className="mt-5 overflow-auto rounded-md bg-slate-950 p-4 text-sm text-amber-100">
-              {result.error}
-            </pre>
-          ) : (
-            <div className="mt-5">
-              <p className="text-sm text-slate-400">
-                Pobrane kluby: {result.data.length}
-              </p>
-              <ul className="mt-4 grid gap-2">
-                {result.data.map((club) => (
-                  <li
-                    key={club.id}
-                    className="rounded-md border border-white/10 bg-slate-950/60 px-4 py-3"
-                  >
-                    {club.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+    <GameShell
+      eyebrow="Supabase"
+      title="Database status"
+      description="Connection check for the public league tables used by the game UI."
+    >
+      <section className="game-panel p-6">
+        <div className="flex items-center gap-3">
+          <span
+            className={`h-3 w-3 rounded-full ${
+              isConnected ? "bg-teal-300" : "bg-amber-300"
+            }`}
+          />
+          <p className="font-semibold">
+            {isConnected
+              ? "Connection works and the clubs table responds."
+              : "The app works, but Supabase or the clubs table is not ready."}
+          </p>
         </div>
+
+        {result.error ? (
+          <div className="mt-5">
+            <DataWarning message={result.error} />
+          </div>
+        ) : (
+          <div className="mt-5">
+            <p className="text-sm text-slate-400">
+              Clubs fetched: {result.data.length}
+            </p>
+            <ul className="mt-4 grid gap-2 md:grid-cols-2">
+              {result.data.map((club) => (
+                <li key={club.id} className="game-panel-soft px-4 py-3">
+                  <span className="font-semibold text-white">{club.name}</span>
+                  <span className="ml-2 text-xs font-black text-teal-200">
+                    {club.short_name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
-    </main>
+    </GameShell>
   );
 }

@@ -4,65 +4,82 @@ import { NavLink } from "@/components/NavLink";
 
 export default function Home() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,#0f3d38,transparent_34%),linear-gradient(135deg,#07090f_0%,#101522_58%,#111827_100%)]">
-      <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
+    <main className="game-bg min-h-screen overflow-hidden text-white">
+      <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-7">
         <nav className="flex items-center justify-between gap-4">
-          <Link
-            href="/"
-            className="text-sm font-semibold uppercase tracking-wider text-emerald-200"
-          >
-            Overr Super League
+          <Link href="/" className="block">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-teal-200">
+              Overr
+            </p>
+            <p className="mt-1 text-xl font-black leading-none text-white">
+              Super League
+            </p>
           </Link>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <NavLink href="/dashboard">Dashboard</NavLink>
-            <NavLink href="/status">Database status</NavLink>
-            <NavLink href="/account">Account</NavLink>
+            <NavLink href="/status">Database</NavLink>
             <AuthNav />
           </div>
         </nav>
 
-        <div className="grid flex-1 items-center gap-10 py-14 lg:grid-cols-[1.08fr_0.92fr]">
+        <div className="grid flex-1 items-center gap-8 py-10 lg:grid-cols-[0.92fr_1.08fr]">
           <div>
-            <p className="mb-4 text-sm font-semibold uppercase tracking-wider text-emerald-200">
-              Private career mode for friends
-            </p>
-            <h1 className="max-w-3xl text-5xl font-black leading-tight text-white md:text-7xl">
-              Overr Super League
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-              Technical foundation for a private football manager league:
-              clubs, players, matches, transfers and Supabase auth ready for the
-              next game systems.
+            <p className="game-kicker">Private career mode for friends</p>
+            <h1 className="game-title mt-4">Overr Super League</h1>
+            <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300">
+              A multiplayer football manager base for clubs, tactics, transfers,
+              league rounds and Supabase-powered accounts.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/dashboard"
-                className="rounded-md bg-emerald-300 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-200"
-              >
-                Open dashboard
+              <Link href="/dashboard" className="game-button-primary">
+                Enter league HQ
               </Link>
-              <Link
-                href="/status"
-                className="rounded-md border border-white/15 px-5 py-3 text-sm font-bold text-white transition hover:border-emerald-300/70"
-              >
-                Check database
+              <Link href="/my-club" className="game-button-secondary">
+                Manage my club
               </Link>
+            </div>
+
+            <div className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
+              {[
+                ["Mode", "Manager"],
+                ["Clubs", "10-16"],
+                ["Matchday", "20:00"],
+              ].map(([label, value]) => (
+                <div key={label} className="game-panel-soft p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                    {label}
+                  </p>
+                  <p className="mt-2 text-xl font-black text-white">{value}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/40">
-            <div className="grid grid-cols-2 gap-3">
-              {["Season 01", "10 clubs", "Live market", "Match weeks"].map(
-                (label) => (
+          <div className="pitch-card p-6">
+            <div className="relative z-10 grid h-full min-h-[340px] content-between">
+              <div className="flex items-start justify-between gap-4">
+                <div className="rounded-md bg-slate-950/80 p-4 ring-1 ring-white/10">
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-teal-200">
+                    Match Centre
+                  </p>
+                  <p className="mt-2 text-3xl font-black">Season 01</p>
+                </div>
+                <div className="rounded-md bg-amber-300 px-3 py-2 text-sm font-black text-slate-950">
+                  LIVE HUB
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                {["Tactics", "Market", "Fixtures"].map((label) => (
                   <div
                     key={label}
-                    className="rounded-md border border-white/10 bg-slate-950/55 p-5"
+                    className="rounded-md bg-slate-950/82 p-4 ring-1 ring-white/10"
                   >
-                    <div className="h-2 w-12 rounded bg-emerald-300" />
-                    <p className="mt-5 text-xl font-bold text-white">{label}</p>
+                    <p className="text-sm font-black text-white">{label}</p>
+                    <div className="mt-3 h-1.5 rounded bg-teal-300" />
                   </div>
-                ),
-              )}
+                ))}
+              </div>
             </div>
           </div>
         </div>

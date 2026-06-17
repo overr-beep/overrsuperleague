@@ -20,23 +20,22 @@ export default async function CreateClubPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
-      <section className="mx-auto max-w-4xl">
-        <Link
-          href="/"
-          className="text-sm font-bold uppercase tracking-wider text-emerald-200"
-        >
+    <main className="game-bg grid min-h-screen place-items-center px-6 py-8 text-white">
+      <section className="w-full max-w-3xl">
+        <Link href="/" className="game-kicker">
           Overr Super League
         </Link>
-        <p className="mt-10 text-sm font-semibold uppercase tracking-wider text-emerald-200">
-          First setup
-        </p>
-        <h1 className="mt-2 text-4xl font-black">Create your club</h1>
-        <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400">
-          Every manager needs one club before entering the league dashboard.
-          Choose a name now. You can tune details later.
-        </p>
-        <CreateClubForm />
+        <div className="game-panel mt-6 grid gap-6 p-7 lg:grid-cols-[0.9fr_1.1fr]">
+          <div>
+            <p className="game-kicker">First setup</p>
+            <h1 className="mt-2 text-4xl font-black">Create your club</h1>
+            <p className="mt-4 text-sm leading-6 text-slate-400">
+              Every manager needs one club before entering the league dashboard.
+              Choose a name now. You can tune details later.
+            </p>
+          </div>
+          <CreateClubForm />
+        </div>
       </section>
     </main>
   );

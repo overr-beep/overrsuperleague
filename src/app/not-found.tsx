@@ -2,15 +2,15 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-950 px-6 text-white">
-      <section className="text-center">
-        <h1 className="text-4xl font-black">404</h1>
-        <p className="mt-3 text-slate-300">Nie znaleziono strony.</p>
-        <Link
-          href="/"
-          className="mt-5 inline-flex rounded-md bg-emerald-300 px-4 py-2 text-sm font-bold text-slate-950"
-        >
-          Strona główna
+    <main className="game-bg grid min-h-screen place-items-center px-6 text-white">
+      <section className="game-panel max-w-md p-8 text-center">
+        <p className="game-kicker">404</p>
+        <h1 className="mt-2 text-4xl font-black">Page not found</h1>
+        <p className="mt-3 text-sm text-slate-400">
+          This screen is outside the current league route map.
+        </p>
+        <Link href="/" className="game-button-primary mt-6">
+          Home
         </Link>
       </section>
     </main>

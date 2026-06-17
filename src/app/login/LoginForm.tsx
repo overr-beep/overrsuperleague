@@ -43,7 +43,7 @@ export function LoginForm({
 
   if (!loading && session) {
     return (
-      <section className="mt-8 max-w-md rounded-lg border border-white/10 bg-white/[0.04] p-6">
+      <section className="mt-6 game-panel-soft p-5">
         <h2 className="text-xl font-bold">You are logged in</h2>
         <p className="mt-3 break-words text-sm text-slate-300">
           Signed in as {session.user.email}
@@ -51,13 +51,13 @@ export function LoginForm({
         <div className="mt-5 flex flex-wrap gap-3">
           <Link
             href={nextPath}
-            className="rounded-md bg-emerald-300 px-4 py-2 text-sm font-bold text-slate-950"
+            className="game-button-primary"
           >
             Continue
           </Link>
           <Link
             href="/logout"
-            className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white"
+            className="game-button-secondary"
           >
             Logout
           </Link>
@@ -69,7 +69,7 @@ export function LoginForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-8 max-w-md rounded-lg border border-white/10 bg-white/[0.04] p-6"
+      className="mt-6"
     >
       <label htmlFor="email" className="text-sm font-semibold text-slate-200">
         Email
@@ -80,13 +80,13 @@ export function LoginForm({
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         required
-        className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-300"
+        className="game-input mt-2"
         placeholder="manager@example.com"
       />
       <button
         type="submit"
         disabled={submitting}
-        className="mt-4 w-full rounded-md bg-emerald-300 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60"
+        className="game-button-primary mt-4 w-full disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? "Sending..." : "Send login link"}
       </button>
