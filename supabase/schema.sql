@@ -84,6 +84,8 @@ create index if not exists transfers_player_id_idx on public.transfers(player_id
 
 grant usage on schema public to anon, authenticated;
 grant select on public.clubs to anon;
+grant select on public.players to anon;
+grant select on public.matches to anon;
 grant select on public.profiles to authenticated;
 grant select, update on public.clubs to authenticated;
 grant select on public.players to authenticated;
@@ -192,6 +194,12 @@ on public.players for select
 to authenticated
 using (true);
 
+drop policy if exists "Anonymous users can read players for dashboard" on public.players;
+create policy "Anonymous users can read players for dashboard"
+on public.players for select
+to anon
+using (true);
+
 drop policy if exists "Admins can manage players" on public.players;
 create policy "Admins can manage players"
 on public.players for all
@@ -203,6 +211,12 @@ drop policy if exists "Authenticated users can read matches" on public.matches;
 create policy "Authenticated users can read matches"
 on public.matches for select
 to authenticated
+using (true);
+
+drop policy if exists "Anonymous users can read matches for dashboard" on public.matches;
+create policy "Anonymous users can read matches for dashboard"
+on public.matches for select
+to anon
 using (true);
 
 drop policy if exists "Admins can manage matches" on public.matches;
