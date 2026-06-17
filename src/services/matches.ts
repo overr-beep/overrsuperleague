@@ -44,6 +44,32 @@ export async function getMatchesByClubId(clubId: string): Promise<{
   };
 }
 
+export async function getNextMatchByClubId(clubId: string): Promise<{
+  data: Match | null;
+  error: string | null;
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return { data: null, error: "Supabase environment variables are not set." };
+  }
+
+  const { data, error } = await supabase
+    .from("matches")
+    .select("*")
+    .or(`home_club_id.eq.${clubId},away_club_id.eq.${clubId}`)
+    .eq("status", "scheduled")
+    .gte("scheduled_at", new Date().toISOString())
+    .order("scheduled_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  return {
+    data: (data ?? null) as Match | null,
+    error: error?.message ?? null,
+  };
+}
+
 export async function getMatchesByRound(roundNumber: number): Promise<{
   data: Match[];
   error: string | null;

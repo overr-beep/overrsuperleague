@@ -44,6 +44,8 @@ create table if not exists public.clubs (
   goals_against integer not null default 0,
   formation_attack integer not null default 0,
   formation_defense integer not null default 0,
+  formation text not null default '4-4-2',
+  last_lineup_saved_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -57,6 +59,9 @@ create table if not exists public.players (
   overall integer not null check (overall between 1 and 99),
   attack_rating integer not null default 50,
   defense_rating integer not null default 50,
+  fitness integer not null default 100 check (fitness between 0 and 100),
+  suspended_until_round integer,
+  injured_until timestamptz,
   value numeric(14, 2) not null default 0,
   price numeric(14, 2) not null default 0,
   wage numeric(12, 2) not null default 0,
@@ -94,10 +99,20 @@ create table if not exists public.lineups (
   id uuid primary key default gen_random_uuid(),
   club_id uuid not null references public.clubs(id) on delete cascade,
   player_id uuid not null references public.players(id) on delete cascade,
-  slot integer not null check (slot between 1 and 11),
+  slot integer not null check (slot between 1 and 16),
+  role text not null default 'starter' check (role in ('starter', 'bench')),
+  position_slot text,
   created_at timestamptz not null default now(),
   unique (club_id, slot),
   unique (club_id, player_id)
+);
+
+create table if not exists public.news_feed (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid references public.clubs(id) on delete set null,
+  match_id uuid references public.matches(id) on delete set null,
+  message text not null,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.league_state (
@@ -121,6 +136,8 @@ create index if not exists lineups_club_id_idx on public.lineups(club_id);
 create index if not exists lineups_player_id_idx on public.lineups(player_id);
 create index if not exists matches_round_number_idx on public.matches(round_number);
 create index if not exists players_club_id_price_idx on public.players(club_id, price);
+create index if not exists news_feed_created_at_idx on public.news_feed(created_at desc);
+create index if not exists news_feed_club_id_idx on public.news_feed(club_id);
 
 grant usage on schema public to anon, authenticated;
 grant select on public.clubs to anon;
@@ -133,6 +150,7 @@ grant select on public.matches to authenticated;
 grant select on public.transfers to authenticated;
 grant select on public.lineups to anon, authenticated;
 grant select on public.league_state to anon, authenticated;
+grant select on public.news_feed to anon, authenticated;
 grant insert, update, delete on public.profiles to authenticated;
 grant insert, update, delete on public.clubs to authenticated;
 grant insert, update, delete on public.players to authenticated;
@@ -140,6 +158,7 @@ grant insert, update, delete on public.matches to authenticated;
 grant insert, update, delete on public.transfers to authenticated;
 grant insert, update, delete on public.lineups to authenticated;
 grant update on public.league_state to authenticated;
+grant insert, update, delete on public.news_feed to authenticated;
 
 alter table public.profiles enable row level security;
 alter table public.clubs enable row level security;
@@ -148,6 +167,7 @@ alter table public.matches enable row level security;
 alter table public.transfers enable row level security;
 alter table public.lineups enable row level security;
 alter table public.league_state enable row level security;
+alter table public.news_feed enable row level security;
 
 create or replace function public.is_admin()
 returns boolean
@@ -375,6 +395,25 @@ using (true);
 drop policy if exists "Admins can update league state" on public.league_state;
 create policy "Admins can update league state"
 on public.league_state for update
+to authenticated
+using (public.is_admin())
+with check (public.is_admin());
+
+drop policy if exists "Anyone can read news feed" on public.news_feed;
+create policy "Anyone can read news feed"
+on public.news_feed for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "Authenticated users can add league news" on public.news_feed;
+create policy "Authenticated users can add league news"
+on public.news_feed for insert
+to authenticated
+with check (true);
+
+drop policy if exists "Admins can manage news feed" on public.news_feed;
+create policy "Admins can manage news feed"
+on public.news_feed for all
 to authenticated
 using (public.is_admin())
 with check (public.is_admin());

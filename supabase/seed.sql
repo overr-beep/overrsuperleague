@@ -116,6 +116,14 @@ set
     else price
   end;
 
+update public.players
+set fitness = 100
+where fitness is null;
+
+update public.clubs
+set formation = '4-4-2'
+where formation is null;
+
 insert into public.players (
   club_id,
   first_name,
@@ -219,4 +227,18 @@ where not exists (
   where existing.player_id = p.id
     and existing.to_club_id = to_club.id
     and existing.status = t.status::public.transfer_status
+);
+
+insert into public.news_feed (message)
+select message
+from (
+  values
+    ('League office opened the Overr Super League multiplayer preseason.'),
+    ('Managers can now save formations, benches and transfer moves.'),
+    ('Match engine now tracks fitness, cards and injuries.')
+) as feed(message)
+where not exists (
+  select 1
+  from public.news_feed existing
+  where existing.message = feed.message
 );

@@ -4,7 +4,11 @@ import { AuthNav } from "@/components/AuthNav";
 import { getCurrentUser } from "@/services/auth";
 import { getClubByOwnerId } from "@/services/clubs";
 import { getLineupByClubId } from "@/services/lineups";
-import { getMatchesByClubId } from "@/services/matches";
+import {
+  getLeagueState,
+  getMatchesByClubId,
+  getNextMatchByClubId,
+} from "@/services/matches";
 import { getPlayersByClubId } from "@/services/players";
 import type { Club, Match } from "@/types/database";
 import { formatMoney } from "@/utils/formatMoney";
@@ -58,14 +62,28 @@ export default async function MyClubPage() {
     );
   }
 
-  const [playersResult, matchesResult, lineupResult] = await Promise.all([
+  const [
+    playersResult,
+    matchesResult,
+    lineupResult,
+    leagueStateResult,
+    nextMatchResult,
+  ] = await Promise.all([
     getPlayersByClubId(club.id),
     getMatchesByClubId(club.id),
     getLineupByClubId(club.id),
+    getLeagueState(),
+    getNextMatchByClubId(club.id),
   ]);
 
   const players = playersResult.data;
   const matches = matchesResult.data;
+  const nextMatch = nextMatchResult.data;
+  const minutesToKickoff = nextMatch
+    ? (new Date(nextMatch.scheduled_at).getTime() - Date.now()) / 60000
+    : null;
+  const isLineupLocked =
+    minutesToKickoff !== null && minutesToKickoff > 0 && minutesToKickoff <= 30;
   const squadValue = players.reduce(
     (sum, player) => sum + Number(player.value),
     0,
@@ -92,7 +110,7 @@ export default async function MyClubPage() {
             </p>
             <h1 className="mt-2 text-5xl font-black">{club.name}</h1>
             <p className="mt-2 text-sm text-slate-400">
-              {club.short_name} · {club.city ?? "No city set"}
+              {club.short_name} - {club.city ?? "No city set"} - {club.formation}
             </p>
           </div>
           <Link
@@ -138,8 +156,7 @@ export default async function MyClubPage() {
           <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
             <h2 className="text-xl font-bold">Manage club</h2>
             <p className="mt-2 text-sm text-slate-400">
-              MVP management: name and city. More controls will come with
-              transfers and finances.
+              Club identity and manager-visible metadata.
             </p>
             <div className="mt-5">
               <ManageClubForm name={club.name} city={club.city} />
@@ -168,13 +185,15 @@ export default async function MyClubPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[680px] border-separate border-spacing-0 text-left text-sm">
+                <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left text-sm">
                   <thead className="text-xs uppercase tracking-wider text-slate-500">
                     <tr>
                       <th className="border-b border-white/10 pb-3">Player</th>
                       <th className="border-b border-white/10 pb-3">Pos.</th>
-                      <th className="border-b border-white/10 pb-3">Age</th>
                       <th className="border-b border-white/10 pb-3">OVR</th>
+                      <th className="border-b border-white/10 pb-3">ATK</th>
+                      <th className="border-b border-white/10 pb-3">DEF</th>
+                      <th className="border-b border-white/10 pb-3">Fitness</th>
                       <th className="border-b border-white/10 pb-3">Value</th>
                     </tr>
                   </thead>
@@ -188,10 +207,16 @@ export default async function MyClubPage() {
                           {player.position}
                         </td>
                         <td className="border-b border-white/5 py-3">
-                          {player.age}
+                          {player.overall}
                         </td>
                         <td className="border-b border-white/5 py-3">
-                          {player.overall}
+                          {player.attack_rating}
+                        </td>
+                        <td className="border-b border-white/5 py-3">
+                          {player.defense_rating}
+                        </td>
+                        <td className="border-b border-white/5 py-3">
+                          {player.fitness}%
                         </td>
                         <td className="border-b border-white/5 py-3">
                           {formatMoney(Number(player.value))}
@@ -208,13 +233,14 @@ export default async function MyClubPage() {
         <section className="mt-6 rounded-lg border border-white/10 bg-white/[0.04] p-5">
           <div className="mb-4 flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold">Starting XI</h2>
+              <h2 className="text-xl font-bold">Tactics</h2>
               <p className="mt-1 text-sm text-slate-400">
-                Choose exactly 11 players. One of them must be a goalkeeper.
+                Save exact formation slots and up to five substitutes.
               </p>
             </div>
             <span className="text-sm text-slate-400">
-              {lineupResult.data.length}/11 selected
+              {lineupResult.data.filter((item) => item.role === "starter").length}
+              /11 selected
             </span>
           </div>
           {lineupResult.error ? (
@@ -226,7 +252,13 @@ export default async function MyClubPage() {
               Your squad needs at least 11 players before saving a lineup.
             </p>
           ) : (
-            <LineupForm players={players} lineup={lineupResult.data} />
+            <LineupForm
+              players={players}
+              lineup={lineupResult.data}
+              formation={club.formation}
+              currentRound={leagueStateResult.currentRound}
+              isLocked={isLineupLocked}
+            />
           )}
         </section>
 
@@ -249,7 +281,7 @@ export default async function MyClubPage() {
                 >
                   <p className="font-semibold">{matchLabel(match, club)}</p>
                   <p className="mt-1 text-sm text-slate-400">
-                    {formatDate(match.scheduled_at)} · {match.status}
+                    {formatDate(match.scheduled_at)} - {match.status}
                   </p>
                 </article>
               ))}

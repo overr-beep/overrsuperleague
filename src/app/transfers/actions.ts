@@ -106,6 +106,11 @@ export async function buyFreeAgentAction(
     status: "completed",
   });
 
+  await supabase.from("news_feed").insert({
+    club_id: club.id,
+    message: `${club.name} signed ${player.first_name} ${player.last_name} for ${price.toLocaleString("en-US")}.`,
+  });
+
   revalidatePath("/transfers");
   revalidatePath("/my-club");
   revalidatePath("/dashboard");

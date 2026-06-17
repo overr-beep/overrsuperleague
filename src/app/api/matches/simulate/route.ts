@@ -2,13 +2,31 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { Club, Match, Player } from "@/types/database";
+import type { Club, Lineup, Match, Player } from "@/types/database";
+import {
+  getFormationSlots,
+  isAvailableForMatch,
+  validateLineupShape,
+} from "@/utils/formations";
 import { normalizePosition } from "@/utils/positions";
 
 type SimulationTeam = {
   club: Club;
   players: Player[];
 };
+
+type DisciplineEvent = {
+  player: Player;
+  type: "red_card" | "injury";
+};
+
+function effectiveAttack(player: Player) {
+  return Math.round(player.attack_rating * Math.max(player.fitness, 30) / 100);
+}
+
+function effectiveDefense(player: Player) {
+  return Math.round(player.defense_rating * Math.max(player.fitness, 30) / 100);
+}
 
 function attackingPlayers(players: Player[]) {
   return players.filter((player) =>
@@ -24,14 +42,14 @@ function defensivePlayers(players: Player[]) {
 
 function sumAttack(players: Player[]) {
   return attackingPlayers(players).reduce(
-    (sum, player) => sum + player.attack_rating,
+    (sum, player) => sum + effectiveAttack(player),
     0,
   );
 }
 
 function sumDefense(players: Player[]) {
   return defensivePlayers(players).reduce(
-    (sum, player) => sum + player.defense_rating,
+    (sum, player) => sum + effectiveDefense(player),
     0,
   );
 }
@@ -42,6 +60,21 @@ function pickScorer(players: Player[]) {
   const index = Math.floor(Math.random() * candidates.length);
 
   return candidates[index];
+}
+
+function randomDisciplineEvent(players: Player[]): DisciplineEvent | null {
+  const roll = Math.random();
+
+  if (roll > 0.16) {
+    return null;
+  }
+
+  const player = players[Math.floor(Math.random() * players.length)];
+
+  return {
+    player,
+    type: roll < 0.06 ? "red_card" : "injury",
+  };
 }
 
 function simulateMatch(home: SimulationTeam, away: SimulationTeam) {
@@ -81,6 +114,10 @@ function simulateMatch(home: SimulationTeam, away: SimulationTeam) {
     events.length > 0
       ? events.join("\n")
       : "A tight tactical match with no goals from the six best chances.";
+  const disciplineEvents = [
+    randomDisciplineEvent(home.players),
+    randomDisciplineEvent(away.players),
+  ].filter((event): event is DisciplineEvent => event !== null);
 
   return {
     homeScore,
@@ -90,6 +127,7 @@ function simulateMatch(home: SimulationTeam, away: SimulationTeam) {
     awayAttack,
     awayDefense,
     report,
+    disciplineEvents,
   };
 }
 
@@ -108,13 +146,16 @@ function leagueDelta(goalsFor: number, goalsAgainst: number) {
 async function getLineupPlayers(
   supabase: SupabaseClient,
   clubId: string,
+  formation: string,
+  currentRound: number,
 ) {
   const { data: lineupRows } = await supabase
     .from("lineups")
-    .select("player_id")
+    .select("*")
     .eq("club_id", clubId)
+    .eq("role", "starter")
     .order("slot", { ascending: true });
-  const lineupIds = (lineupRows ?? []).map((row) => row.player_id);
+  const lineupIds = ((lineupRows ?? []) as Lineup[]).map((row) => row.player_id);
 
   if (lineupIds.length === 11) {
     const { data } = await supabase
@@ -122,17 +163,86 @@ async function getLineupPlayers(
       .select("*")
       .in("id", lineupIds);
 
-    return (data ?? []) as Player[];
+    const playersById = new Map(
+      ((data ?? []) as Player[]).map((player) => [player.id, player]),
+    );
+    const orderedPlayers = lineupIds
+      .map((playerId) => playersById.get(playerId))
+      .filter((player): player is Player => player !== undefined);
+    const shapeError = validateLineupShape(
+      orderedPlayers,
+      getFormationSlots(formation),
+      currentRound,
+    );
+
+    if (!shapeError) {
+      return orderedPlayers;
+    }
   }
 
   const { data } = await supabase
     .from("players")
     .select("*")
     .eq("club_id", clubId)
-    .order("overall", { ascending: false })
-    .limit(11);
+    .order("overall", { ascending: false });
+  const availablePlayers = ((data ?? []) as Player[]).filter((player) =>
+    isAvailableForMatch(player, currentRound),
+  );
+  const fallback: Player[] = [];
+  const usedIds = new Set<string>();
 
-  return (data ?? []) as Player[];
+  for (const position of getFormationSlots(formation)) {
+    const player = availablePlayers.find(
+      (item) => !usedIds.has(item.id) && normalizePosition(item.position) === position,
+    );
+
+    if (player) {
+      fallback.push(player);
+      usedIds.add(player.id);
+    }
+  }
+
+  return fallback;
+}
+
+async function updateFitnessAndEvents(
+  supabase: SupabaseClient,
+  clubId: string,
+  starters: Player[],
+  currentRound: number,
+  events: DisciplineEvent[],
+) {
+  const starterIds = new Set(starters.map((player) => player.id));
+  const { data } = await supabase.from("players").select("*").eq("club_id", clubId);
+  const squad = (data ?? []) as Player[];
+
+  await Promise.all(
+    squad.map((player) => {
+      const nextFitness = starterIds.has(player.id)
+        ? Math.max(player.fitness - 15, 20)
+        : Math.min(player.fitness + 10, 100);
+
+      return supabase
+        .from("players")
+        .update({ fitness: nextFitness })
+        .eq("id", player.id);
+    }),
+  );
+
+  await Promise.all(
+    events.map((event) => {
+      const update =
+        event.type === "red_card"
+          ? { suspended_until_round: currentRound + 1 }
+          : {
+              injured_until: new Date(
+                Date.now() + 3 * 24 * 60 * 60 * 1000,
+              ).toISOString(),
+            };
+
+      return supabase.from("players").update(update).eq("id", event.player.id);
+    }),
+  );
 }
 
 async function updateClubAfterMatch(
@@ -255,8 +365,8 @@ async function simulateNextMatch(request: NextRequest) {
   }
 
   const [homePlayers, awayPlayers] = await Promise.all([
-    getLineupPlayers(supabase, homeClub.id),
-    getLineupPlayers(supabase, awayClub.id),
+    getLineupPlayers(supabase, homeClub.id, homeClub.formation, currentRound),
+    getLineupPlayers(supabase, awayClub.id, awayClub.formation, currentRound),
   ]);
 
   if (homePlayers.length < 11 || awayPlayers.length < 11) {
@@ -270,6 +380,16 @@ async function simulateNextMatch(request: NextRequest) {
     { club: homeClub, players: homePlayers },
     { club: awayClub, players: awayPlayers },
   );
+  const eventReport = result.disciplineEvents
+    .map((event) =>
+      event.type === "red_card"
+        ? `${event.player.first_name} ${event.player.last_name} received a red card and is suspended for the next round.`
+        : `${event.player.first_name} ${event.player.last_name} picked up an injury and is out for 3 days.`,
+    )
+    .join("\n");
+  const fullReport = eventReport
+    ? `${result.report}\n${eventReport}`
+    : result.report;
 
   await supabase
     .from("matches")
@@ -277,7 +397,7 @@ async function simulateNextMatch(request: NextRequest) {
       status: "played",
       home_score: result.homeScore,
       away_score: result.awayScore,
-      report: result.report,
+      report: fullReport,
     })
     .eq("id", match.id);
 
@@ -298,7 +418,30 @@ async function simulateNextMatch(request: NextRequest) {
       result.awayAttack,
       result.awayDefense,
     ),
+    updateFitnessAndEvents(
+      supabase,
+      homeClub.id,
+      homePlayers,
+      currentRound,
+      result.disciplineEvents.filter((event) =>
+        homePlayers.some((player) => player.id === event.player.id),
+      ),
+    ),
+    updateFitnessAndEvents(
+      supabase,
+      awayClub.id,
+      awayPlayers,
+      currentRound,
+      result.disciplineEvents.filter((event) =>
+        awayPlayers.some((player) => player.id === event.player.id),
+      ),
+    ),
   ]);
+
+  await supabase.from("news_feed").insert({
+    match_id: match.id,
+    message: `${homeClub.short_name} ${result.homeScore}-${result.awayScore} ${awayClub.short_name}. Match report generated.`,
+  });
 
   const { count } = await supabase
     .from("matches")
@@ -322,7 +465,7 @@ async function simulateNextMatch(request: NextRequest) {
     away: awayClub.short_name,
     home_score: result.homeScore,
     away_score: result.awayScore,
-    report: result.report,
+    report: fullReport,
   });
 }
 

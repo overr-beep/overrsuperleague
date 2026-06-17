@@ -2,6 +2,7 @@ export type ProfileRole = "admin" | "manager";
 export type MatchStatus = "scheduled" | "played" | "postponed";
 export type TransferStatus = "rumor" | "pending" | "completed" | "cancelled";
 export type PlayerPosition = "BR" | "OBR" | "POM" | "NAP" | string;
+export type LineupRole = "starter" | "bench";
 
 export type Profile = {
   id: string;
@@ -26,6 +27,8 @@ export type Club = {
   goals_against: number;
   formation_attack: number;
   formation_defense: number;
+  formation: string;
+  last_lineup_saved_at: string | null;
   created_at: string;
 };
 
@@ -39,6 +42,9 @@ export type Player = {
   overall: number;
   attack_rating: number;
   defense_rating: number;
+  fitness: number;
+  suspended_until_round: number | null;
+  injured_until: string | null;
   value: number;
   price: number;
   wage: number;
@@ -73,6 +79,8 @@ export type Lineup = {
   club_id: string;
   player_id: string;
   slot: number;
+  role: LineupRole;
+  position_slot: PlayerPosition | null;
   created_at: string;
 };
 
@@ -80,4 +88,12 @@ export type LeagueState = {
   id: number;
   current_round: number;
   updated_at: string;
+};
+
+export type NewsFeedItem = {
+  id: string;
+  club_id: string | null;
+  match_id: string | null;
+  message: string;
+  created_at: string;
 };

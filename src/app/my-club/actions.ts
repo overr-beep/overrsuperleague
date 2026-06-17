@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { buildStarterSquadRows } from "@/utils/starterSquad";
-import { normalizePosition } from "@/utils/positions";
+import { getFormationSlots, isFormationName, validateLineupShape } from "@/utils/formations";
 
 export type MyClubActionState = {
   error: string | null;
@@ -175,39 +175,93 @@ export async function saveLineupAction(
     return { error: setupError ?? "Club not found.", success: null };
   }
 
-  const playerIds = formData
-    .getAll("playerIds")
+  const { data: nextMatch } = await supabase
+    .from("matches")
+    .select("scheduled_at")
+    .or(`home_club_id.eq.${club.id},away_club_id.eq.${club.id}`)
+    .eq("status", "scheduled")
+    .gte("scheduled_at", new Date().toISOString())
+    .order("scheduled_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (nextMatch?.scheduled_at) {
+    const minutesToKickoff =
+      (new Date(nextMatch.scheduled_at).getTime() - Date.now()) / 60000;
+
+    if (minutesToKickoff <= 30) {
+      return {
+        error: "Lineup is locked 30 minutes before kickoff.",
+        success: null,
+      };
+    }
+  }
+
+  const formation = String(formData.get("formation") ?? club.formation ?? "4-4-2");
+
+  if (!isFormationName(formation)) {
+    return { error: "Unknown formation.", success: null };
+  }
+
+  const requiredSlots = getFormationSlots(formation);
+  const starterIds = requiredSlots
+    .map((_, index) => String(formData.get(`starter_${index + 1}`) ?? ""))
+    .filter(Boolean);
+  const benchIds = formData
+    .getAll("benchIds")
     .map((value) => String(value))
     .filter(Boolean);
-  const uniquePlayerIds = [...new Set(playerIds)];
+  const uniqueStarterIds = [...new Set(starterIds)];
+  const uniqueBenchIds = [...new Set(benchIds)];
+  const allPlayerIds = [...new Set([...uniqueStarterIds, ...uniqueBenchIds])];
 
-  if (uniquePlayerIds.length !== 11) {
+  if (starterIds.length !== 11 || uniqueStarterIds.length !== 11) {
     return { error: "Lineup must contain exactly 11 players.", success: null };
+  }
+
+  if (uniqueBenchIds.length > 5) {
+    return { error: "Bench can contain at most 5 players.", success: null };
+  }
+
+  if (allPlayerIds.length !== uniqueStarterIds.length + uniqueBenchIds.length) {
+    return { error: "A player cannot be both starter and substitute.", success: null };
   }
 
   const { data: players, error: playersError } = await supabase
     .from("players")
     .select("*")
-    .in("id", uniquePlayerIds)
+    .in("id", allPlayerIds)
     .eq("club_id", club.id);
 
   if (playersError) {
     return { error: playersError.message, success: null };
   }
 
-  if ((players ?? []).length !== 11) {
+  if ((players ?? []).length !== allPlayerIds.length) {
     return {
       error: "Every lineup player must belong to your club.",
       success: null,
     };
   }
 
-  const hasGoalkeeper = (players ?? []).some(
-    (player) => normalizePosition(player.position) === "BR",
+  const playersById = new Map((players ?? []).map((player) => [player.id, player]));
+  const orderedStarters = uniqueStarterIds
+    .map((playerId) => playersById.get(playerId))
+    .filter((player) => player !== undefined);
+
+  const { data: state } = await supabase
+    .from("league_state")
+    .select("current_round")
+    .eq("id", 1)
+    .maybeSingle();
+  const shapeError = validateLineupShape(
+    orderedStarters,
+    requiredSlots,
+    state?.current_round ?? 1,
   );
 
-  if (!hasGoalkeeper) {
-    return { error: "Lineup must include one goalkeeper.", success: null };
+  if (shapeError) {
+    return { error: shapeError, success: null };
   }
 
   const { error: deleteError } = await supabase
@@ -219,19 +273,40 @@ export async function saveLineupAction(
     return { error: deleteError.message, success: null };
   }
 
-  const rows = uniquePlayerIds.map((playerId, index) => ({
+  const starterRows = uniqueStarterIds.map((playerId, index) => ({
     club_id: club.id,
     player_id: playerId,
     slot: index + 1,
+    role: "starter",
+    position_slot: requiredSlots[index],
+  }));
+  const benchRows = uniqueBenchIds.map((playerId, index) => ({
+    club_id: club.id,
+    player_id: playerId,
+    slot: index + 12,
+    role: "bench",
+    position_slot: null,
   }));
 
-  const { error } = await supabase.from("lineups").insert(rows);
+  const { error } = await supabase.from("lineups").insert([
+    ...starterRows,
+    ...benchRows,
+  ]);
 
   if (error) {
     return { error: error.message, success: null };
   }
 
+  await supabase
+    .from("clubs")
+    .update({
+      formation,
+      last_lineup_saved_at: new Date().toISOString(),
+    })
+    .eq("id", club.id);
+
   revalidatePath("/my-club");
+  revalidatePath("/dashboard");
 
   return { error: null, success: "Lineup saved." };
 }

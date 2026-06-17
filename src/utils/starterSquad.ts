@@ -8,7 +8,10 @@ export type StarterPlayerInput = Omit<
   | "created_at"
   | "attack_rating"
   | "defense_rating"
+  | "fitness"
+  | "injured_until"
   | "price"
+  | "suspended_until_round"
 >;
 
 export const starterSquad: StarterPlayerInput[] = [
@@ -163,6 +166,9 @@ export function buildStarterSquadRows(clubId: string) {
       normalizePosition(player.position) === "OBR"
         ? player.overall
         : Math.max(player.overall - 14, 1),
+    fitness: 100,
+    injured_until: null,
     price: player.value,
+    suspended_until_round: null,
   }));
 }

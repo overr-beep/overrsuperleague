@@ -4,8 +4,10 @@ import { AuthNav } from "@/components/AuthNav";
 import { getCurrentUser } from "@/services/auth";
 import { getClubByOwnerId, getClubs } from "@/services/clubs";
 import { getMatches } from "@/services/matches";
+import { getNewsFeed } from "@/services/news";
 import { getPlayers } from "@/services/players";
-import type { Club, Match, Player } from "@/types/database";
+import { getProfilesByIds } from "@/services/profiles";
+import type { Club, Match, NewsFeedItem, Player, Profile } from "@/types/database";
 import { formatMoney } from "@/utils/formatMoney";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +34,20 @@ function formatMatchDate(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function formatCountdown(value: string) {
+  const diffMs = new Date(value).getTime() - Date.now();
+
+  if (diffMs <= 0) {
+    return "kickoff soon";
+  }
+
+  const totalMinutes = Math.floor(diffMs / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${hours}h ${String(minutes).padStart(2, "0")}m`;
 }
 
 function StatTile({
@@ -75,16 +91,26 @@ export default async function DashboardPage() {
     redirect("/create-club");
   }
 
-  const [clubsResult, playersResult, matchesResult] = await Promise.all([
+  const [clubsResult, playersResult, matchesResult, newsResult] = await Promise.all([
     getClubs(),
     getPlayers(),
     getMatches(),
+    getNewsFeed(8),
   ]);
 
   const clubs = clubsResult.data;
   const players = playersResult.data;
   const matches = matchesResult.data;
+  const news = newsResult.data;
+  const profilesResult = await getProfilesByIds(
+    clubs
+      .map((club) => club.owner_id)
+      .filter((ownerId): ownerId is string => ownerId !== null),
+  );
   const clubsById = new Map(clubs.map((club) => [club.id, club]));
+  const profilesById = new Map(
+    profilesResult.data.map((profile: Profile) => [profile.id, profile]),
+  );
   const sortedClubs = [...clubs].sort((a, b) => b.reputation - a.reputation);
   const topPlayers = players.slice(0, 8);
   const upcomingMatches = matches
@@ -95,6 +121,32 @@ export default async function DashboardPage() {
     (sum, player) => sum + Number(player.value),
     0,
   );
+  const nextOwnMatch =
+    matches.find(
+      (match) =>
+        match.status === "scheduled" &&
+        (match.home_club_id === managerClub.id ||
+          match.away_club_id === managerClub.id) &&
+        new Date(match.scheduled_at).getTime() >= Date.now(),
+    ) ?? null;
+  const opponentId =
+    nextOwnMatch?.home_club_id === managerClub.id
+      ? nextOwnMatch.away_club_id
+      : nextOwnMatch?.home_club_id;
+  const opponent = opponentId ? clubsById.get(opponentId) ?? null : null;
+  const opponentManager = opponent?.owner_id
+    ? profilesById.get(opponent.owner_id)
+    : null;
+  const opponentRecentMatches = opponent
+    ? matches
+        .filter(
+          (match) =>
+            match.status === "played" &&
+            (match.home_club_id === opponent.id ||
+              match.away_club_id === opponent.id),
+        )
+        .slice(-3)
+    : [];
 
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
@@ -180,6 +232,65 @@ export default async function DashboardPage() {
             value={playersResult.error ? "-" : formatMoney(totalSquadValue)}
             detail="Suma wartosci zawodnikow"
           />
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <section className="rounded-lg border border-emerald-300/25 bg-emerald-300/10 p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-200">
+              Live status
+            </p>
+            <h2 className="mt-3 text-2xl font-black">
+              {nextOwnMatch
+                ? `Next match in ${formatCountdown(nextOwnMatch.scheduled_at)}`
+                : "No upcoming match"}
+            </h2>
+            {nextOwnMatch ? (
+              <p className="mt-2 text-sm text-slate-300">
+                {getMatchLabel(nextOwnMatch, clubsById)} -{" "}
+                {formatMatchDate(nextOwnMatch.scheduled_at)}
+              </p>
+            ) : null}
+          </section>
+
+          <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Rival preview
+            </p>
+            {opponent ? (
+              <div className="mt-3">
+                <Link
+                  href={`/clubs/${opponent.id}`}
+                  className="text-2xl font-black transition hover:text-emerald-200"
+                >
+                  {opponent.name}
+                </Link>
+                <p className="mt-2 text-sm text-slate-400">
+                  Manager: {opponentManager?.display_name ?? "Unknown"} - Form:{" "}
+                  {opponent.wins}W {opponent.draws}D {opponent.losses}L
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {opponentRecentMatches.length > 0 ? (
+                    opponentRecentMatches.map((match) => (
+                      <span
+                        key={match.id}
+                        className="rounded-md border border-white/10 px-3 py-1 text-xs text-slate-300"
+                      >
+                        {match.home_score}-{match.away_score}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-slate-400">
+                      No played matches yet.
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-slate-400">
+                Schedule a match to see rival details.
+              </p>
+            )}
+          </section>
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -299,6 +410,34 @@ export default async function DashboardPage() {
                 </article>
               ))}
             </div>
+          )}
+        </section>
+
+        <section className="mt-6 rounded-lg border border-white/10 bg-white/[0.04] p-5">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <h2 className="text-xl font-bold">League feed</h2>
+            <span className="text-sm text-slate-400">Latest events</span>
+          </div>
+          {newsResult.error ? (
+            <DataWarning message={newsResult.error} />
+          ) : news.length > 0 ? (
+            <div className="grid gap-3">
+              {news.map((item: NewsFeedItem) => (
+                <article
+                  key={item.id}
+                  className="rounded-md border border-white/10 bg-slate-950/55 px-4 py-3"
+                >
+                  <p className="text-sm text-slate-100">{item.message}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {formatMatchDate(item.created_at)}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-400">
+              No league messages yet. Transfers and simulated matches will appear here.
+            </p>
           )}
         </section>
       </section>
