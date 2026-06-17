@@ -85,9 +85,7 @@ export default async function DashboardPage() {
   const players = playersResult.data;
   const matches = matchesResult.data;
   const clubsById = new Map(clubs.map((club) => [club.id, club]));
-  const topClubs = [...clubs]
-    .sort((a, b) => b.reputation - a.reputation)
-    .slice(0, 5);
+  const sortedClubs = [...clubs].sort((a, b) => b.reputation - a.reputation);
   const topPlayers = players.slice(0, 8);
   const upcomingMatches = matches
     .filter((match) => match.status !== "played")
@@ -108,10 +106,19 @@ export default async function DashboardPage() {
             </p>
             <h1 className="mt-2 text-4xl font-black">Dashboard</h1>
             <p className="mt-2 text-sm text-slate-400">
-              Your club: {managerClub.name}
+              Your club:{" "}
+              <Link href="/my-club" className="font-semibold text-emerald-200">
+                {managerClub.name}
+              </Link>
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
+            <Link
+              href="/my-club"
+              className="rounded-md bg-emerald-300 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-emerald-200"
+            >
+              My club
+            </Link>
             <Link
               href="/status"
               className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:border-emerald-300/70"
@@ -123,6 +130,18 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Link
+            href="/my-club"
+            className="rounded-lg border border-emerald-300/30 bg-emerald-300/10 p-5 transition hover:border-emerald-200"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-200">
+              My club
+            </p>
+            <p className="mt-3 text-3xl font-black text-white">
+              {managerClub.short_name}
+            </p>
+            <p className="mt-2 text-sm text-slate-300">{managerClub.name}</p>
+          </Link>
           <StatTile
             label="Kluby"
             value={String(clubs.length)}
@@ -167,8 +186,15 @@ export default async function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {topClubs.map((club) => (
-                      <tr key={club.id} className="text-slate-200">
+                    {sortedClubs.map((club) => (
+                      <tr
+                        key={club.id}
+                        className={
+                          club.id === managerClub.id
+                            ? "text-emerald-100"
+                            : "text-slate-200"
+                        }
+                      >
                         <td className="border-b border-white/5 py-3 font-semibold text-white">
                           <Link
                             href={`/clubs/${club.id}`}

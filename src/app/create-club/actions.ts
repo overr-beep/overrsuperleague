@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { buildStarterSquadRows } from "@/utils/starterSquad";
 
 export type CreateClubState = {
   error: string | null;
@@ -77,14 +78,18 @@ export async function createClubAction(
     },
   );
 
-  const { error } = await supabase.from("clubs").insert({
-    owner_id: user.id,
-    name,
-    short_name: makeShortName(name, user.id),
-    city: null,
-    budget: 50000000,
-    reputation: 50,
-  });
+  const { data: club, error } = await supabase
+    .from("clubs")
+    .insert({
+      owner_id: user.id,
+      name,
+      short_name: makeShortName(name, user.id),
+      city: null,
+      budget: 50000000,
+      reputation: 50,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     if (error.code === "23505") {
@@ -94,5 +99,17 @@ export async function createClubAction(
     return { error: error.message };
   }
 
-  redirect("/dashboard");
+  if (club?.id) {
+    const { error: playersError } = await supabase
+      .from("players")
+      .insert(buildStarterSquadRows(club.id));
+
+    if (playersError) {
+      return {
+        error: `Club created, but starter squad failed: ${playersError.message}`,
+      };
+    }
+  }
+
+  redirect("/my-club");
 }

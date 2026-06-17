@@ -215,6 +215,19 @@ on public.players for select
 to anon
 using (true);
 
+drop policy if exists "Club owners can create players for their club" on public.players;
+create policy "Club owners can create players for their club"
+on public.players for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from public.clubs
+    where clubs.id = players.club_id
+      and clubs.owner_id = auth.uid()
+  )
+);
+
 drop policy if exists "Admins can manage players" on public.players;
 create policy "Admins can manage players"
 on public.players for all
