@@ -1,5 +1,4 @@
 import type { Player } from "@/types/database";
-import { normalizePosition } from "./positions";
 
 export type StarterPlayerInput = Omit<
   Player,
@@ -10,6 +9,20 @@ export type StarterPlayerInput = Omit<
   | "defense_rating"
   | "fitness"
   | "injured_until"
+  | "nominal_position"
+  | "nationality"
+  | "pac"
+  | "sho"
+  | "pas"
+  | "dri"
+  | "def"
+  | "phy"
+  | "div"
+  | "han"
+  | "kic"
+  | "ref"
+  | "spd"
+  | "pos"
   | "price"
   | "suspended_until_round"
 >;
@@ -153,19 +166,34 @@ export const starterSquad: StarterPlayerInput[] = [
 ];
 
 export function buildStarterSquadRows(clubId: string) {
-  return starterSquad.map((player) => ({
+  const nations = ["ES", "MA", "DE", "CO", "FI", "DK", "BR", "JP", "NG", "FR", "HR", "EN", "HU", "RS"];
+
+  return starterSquad.map((player, index) => ({
     ...player,
     club_id: clubId,
-    position: normalizePosition(player.position),
+    position: player.position === "GK" ? "BR" : player.position,
+    nominal_position: player.position === "GK" ? "BR" : player.position,
+    nationality: nations[index % nations.length],
     attack_rating:
-      normalizePosition(player.position) === "NAP"
+      ["ST", "LW", "RW"].includes(player.position)
         ? player.overall
         : Math.max(player.overall - 12, 1),
     defense_rating:
-      normalizePosition(player.position) === "BR" ||
-      normalizePosition(player.position) === "OBR"
+      ["GK", "BR", "CB", "LB", "RB"].includes(player.position)
         ? player.overall
         : Math.max(player.overall - 14, 1),
+    pac: Math.min(player.overall + (["LW", "RW", "ST"].includes(player.position) ? 7 : 0), 99),
+    sho: Math.min(player.overall + (player.position === "ST" ? 6 : -4), 99),
+    pas: Math.min(player.overall + (["CM", "CDM", "CAM"].includes(player.position) ? 5 : -2), 99),
+    dri: Math.min(player.overall + (["LW", "RW", "CAM"].includes(player.position) ? 6 : -1), 99),
+    def: Math.min(player.overall + (["CB", "LB", "RB", "CDM"].includes(player.position) ? 4 : -12), 99),
+    phy: Math.min(player.overall + (["CB", "ST", "CDM"].includes(player.position) ? 4 : -2), 99),
+    div: player.position === "GK" ? Math.min(player.overall + 3, 99) : 35,
+    han: player.position === "GK" ? Math.min(player.overall + 1, 99) : 35,
+    kic: player.position === "GK" ? Math.max(player.overall - 2, 1) : 35,
+    ref: player.position === "GK" ? Math.min(player.overall + 4, 99) : 35,
+    spd: player.position === "GK" ? Math.max(player.overall - 6, 1) : 35,
+    pos: player.position === "GK" ? Math.min(player.overall + 2, 99) : 35,
     fitness: 100,
     injured_until: null,
     price: player.value,

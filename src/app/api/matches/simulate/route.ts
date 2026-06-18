@@ -4,15 +4,16 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Club, Lineup, Match, Player } from "@/types/database";
 import {
+  calculateChemistry,
   getFormationSlots,
   isAvailableForMatch,
   validateLineupShape,
 } from "@/utils/formations";
-import { normalizePosition } from "@/utils/positions";
 
 type SimulationTeam = {
   club: Club;
   players: Player[];
+  slots: string[];
 };
 
 type DisciplineEvent = {
@@ -20,43 +21,53 @@ type DisciplineEvent = {
   type: "red_card" | "injury";
 };
 
-function effectiveAttack(player: Player) {
-  return Math.round(player.attack_rating * Math.max(player.fitness, 30) / 100);
-}
-
-function effectiveDefense(player: Player) {
-  return Math.round(player.defense_rating * Math.max(player.fitness, 30) / 100);
-}
-
-function attackingPlayers(players: Player[]) {
-  return players.filter((player) =>
-    ["POM", "NAP"].includes(normalizePosition(player.position)),
+function attackingPlayers(team: SimulationTeam) {
+  return team.players.filter((_, index) =>
+    ["LM", "RM", "LW", "RW", "CAM", "ST"].includes(team.slots[index]),
   );
 }
 
-function defensivePlayers(players: Player[]) {
-  return players.filter((player) =>
-    ["BR", "OBR"].includes(normalizePosition(player.position)),
+function defensivePlayers(team: SimulationTeam) {
+  return team.players.filter((_, index) =>
+    ["BR", "LB", "RB", "CB", "CDM"].includes(team.slots[index]),
   );
 }
 
-function sumAttack(players: Player[]) {
-  return attackingPlayers(players).reduce(
-    (sum, player) => sum + effectiveAttack(player),
+function effectiveValues(team: SimulationTeam) {
+  const chemistry = calculateChemistry(team.players, team.slots);
+
+  return new Map(
+    chemistry.map((item) => [
+      item.playerId,
+      Math.round((item.fit.effectiveOverall + item.chemistry) *  Math.max(
+        team.players.find((player) => player.id === item.playerId)?.fitness ?? 100,
+        30,
+      ) / 100),
+    ]),
+  );
+}
+
+function sumAttack(team: SimulationTeam) {
+  const values = effectiveValues(team);
+
+  return attackingPlayers(team).reduce(
+    (sum, player) => sum + (values.get(player.id) ?? player.overall),
     0,
   );
 }
 
-function sumDefense(players: Player[]) {
-  return defensivePlayers(players).reduce(
-    (sum, player) => sum + effectiveDefense(player),
+function sumDefense(team: SimulationTeam) {
+  const values = effectiveValues(team);
+
+  return defensivePlayers(team).reduce(
+    (sum, player) => sum + (values.get(player.id) ?? player.overall),
     0,
   );
 }
 
-function pickScorer(players: Player[]) {
-  const pool = attackingPlayers(players);
-  const candidates = pool.length > 0 ? pool : players;
+function pickScorer(team: SimulationTeam) {
+  const pool = attackingPlayers(team);
+  const candidates = pool.length > 0 ? pool : team.players;
   const index = Math.floor(Math.random() * candidates.length);
 
   return candidates[index];
@@ -78,10 +89,10 @@ function randomDisciplineEvent(players: Player[]): DisciplineEvent | null {
 }
 
 function simulateMatch(home: SimulationTeam, away: SimulationTeam) {
-  const homeAttack = sumAttack(home.players) + 8;
-  const homeDefense = sumDefense(home.players) + 4;
-  const awayAttack = sumAttack(away.players);
-  const awayDefense = sumDefense(away.players);
+  const homeAttack = sumAttack(home) + 8;
+  const homeDefense = sumDefense(home) + 4;
+  const awayAttack = sumAttack(away);
+  const awayDefense = sumDefense(away);
   let homeScore = 0;
   let awayScore = 0;
   const events: string[] = [];
@@ -96,7 +107,7 @@ function simulateMatch(home: SimulationTeam, away: SimulationTeam) {
 
       if (Math.random() < goalChance) {
         homeScore += 1;
-        const scorer = pickScorer(home.players);
+        const scorer = pickScorer(home);
         events.push(`${minute}' ${home.club.short_name}: ${scorer.first_name} ${scorer.last_name}`);
       }
     } else {
@@ -104,7 +115,7 @@ function simulateMatch(home: SimulationTeam, away: SimulationTeam) {
 
       if (Math.random() < goalChance) {
         awayScore += 1;
-        const scorer = pickScorer(away.players);
+        const scorer = pickScorer(away);
         events.push(`${minute}' ${away.club.short_name}: ${scorer.first_name} ${scorer.last_name}`);
       }
     }
@@ -176,7 +187,7 @@ async function getLineupPlayers(
     );
 
     if (!shapeError) {
-      return orderedPlayers;
+    return orderedPlayers;
     }
   }
 
@@ -191,9 +202,9 @@ async function getLineupPlayers(
   const fallback: Player[] = [];
   const usedIds = new Set<string>();
 
-  for (const position of getFormationSlots(formation)) {
+  for (let index = 0; index < getFormationSlots(formation).length; index += 1) {
     const player = availablePlayers.find(
-      (item) => !usedIds.has(item.id) && normalizePosition(item.position) === position,
+      (item) => !usedIds.has(item.id),
     );
 
     if (player) {
@@ -377,8 +388,8 @@ async function simulateNextMatch(request: NextRequest) {
   }
 
   const result = simulateMatch(
-    { club: homeClub, players: homePlayers },
-    { club: awayClub, players: awayPlayers },
+    { club: homeClub, players: homePlayers, slots: getFormationSlots(homeClub.formation) },
+    { club: awayClub, players: awayPlayers, slots: getFormationSlots(awayClub.formation) },
   );
   const eventReport = result.disciplineEvents
     .map((event) =>

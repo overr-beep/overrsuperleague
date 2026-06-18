@@ -7,7 +7,7 @@ export function normalizePosition(position: string) {
     return "OBR";
   }
 
-  if (["CM", "CDM", "CAM", "POM"].includes(position)) {
+  if (["CM", "CDM", "CAM", "LM", "RM", "POM"].includes(position)) {
     return "POM";
   }
 

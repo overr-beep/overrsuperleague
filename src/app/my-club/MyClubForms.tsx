@@ -9,8 +9,11 @@ import {
 import type { MyClubActionState } from "./actions";
 import type { Lineup, Player } from "@/types/database";
 import {
+  calculateChemistry,
   FORMATIONS,
   getFormationSlots,
+  getNominalPosition,
+  getPositionFit,
   isAvailableForMatch,
 } from "@/utils/formations";
 import { normalizePosition } from "@/utils/positions";
@@ -39,7 +42,7 @@ function buildStarterIds(
     const preferred = players.find(
       (player) =>
         player.id === preferredIds[index] &&
-        normalizePosition(player.position) === slot &&
+        getNominalPosition(player) === slot &&
         isAvailableForMatch(player, currentRound) &&
         !usedIds.has(player.id),
     );
@@ -51,7 +54,7 @@ function buildStarterIds(
 
     const fallback = sortByOverall(players).find(
       (player) =>
-        normalizePosition(player.position) === slot &&
+        getNominalPosition(player) === slot &&
         isAvailableForMatch(player, currentRound) &&
         !usedIds.has(player.id),
     );
@@ -74,11 +77,8 @@ function cardName(player: Player | undefined) {
 }
 
 function canPlaySlot(player: Player | undefined, slot: string, currentRound: number) {
-  return (
-    !!player &&
-    normalizePosition(player.position) === slot &&
-    isAvailableForMatch(player, currentRound)
-  );
+  void slot;
+  return !!player && isAvailableForMatch(player, currentRound);
 }
 
 function readDragPayload(value: string): DragPayload | null {
@@ -254,6 +254,17 @@ export function LineupForm({
   const reservePlayers = sortByOverall(players).filter(
     (player) => !selectedStarterSet.has(player.id),
   );
+  const chemistry = calculateChemistry(selectedStarters, formationSlots);
+  const chemistryById = new Map(chemistry.map((item) => [item.playerId, item]));
+  const effectiveTeamOverall =
+    chemistry.length > 0
+      ? Math.round(
+          chemistry.reduce(
+            (sum, item) => sum + item.fit.effectiveOverall + item.chemistry,
+            0,
+          ) / chemistry.length,
+        )
+      : 0;
   const selectedAverage =
     selectedStarters.length > 0
       ? Math.round(
@@ -413,11 +424,12 @@ export function LineupForm({
             </select>
             <span className="status-pill">{selectedStarters.length}/11</span>
             <span className="status-pill">Bench {selectedBench.length}/5</span>
-            <span className="status-pill">OVR {selectedAverage || "-"}</span>
+                <span className="status-pill">OVR {selectedAverage || "-"}</span>
+                <span className="status-pill">EFF {effectiveTeamOverall || "-"}</span>
           </div>
           <button
             type="submit"
-            disabled={pending || isLocked}
+            disabled={pending || isLocked || selectedStarters.length !== 11 || !starterIds[0]}
             className="game-button-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
             {pending ? "Saving..." : "Save"}
@@ -456,6 +468,13 @@ export function LineupForm({
                 >
                   {indexedSlots.map(({ slot, index }) => {
                     const selectedPlayer = playersById.get(starterIds[index] ?? "");
+                    const chemistryItem = selectedPlayer
+                      ? chemistryById.get(selectedPlayer.id)
+                      : null;
+                    const fit = selectedPlayer
+                      ? getPositionFit(selectedPlayer, slot)
+                      : null;
+                    const hasPenalty = !!fit && fit.penaltyPercent > 0;
 
                     return (
                       <button
@@ -484,19 +503,33 @@ export function LineupForm({
                       >
                         <div className="flex items-start justify-between gap-2">
                           <span className="text-xl font-black leading-none">
-                            {selectedPlayer?.overall ?? "--"}
+                            {fit?.effectiveOverall ?? "--"}
                           </span>
                           <span className="rounded bg-slate-950/85 px-1.5 py-0.5 text-[0.62rem] font-black text-teal-200">
                             {slot}
                           </span>
                         </div>
+                        {hasPenalty ? (
+                          <p className="mt-1 text-[0.62rem] font-black text-rose-700">
+                            v -{fit.penaltyPercent}%
+                          </p>
+                        ) : null}
                         <div className="mt-2 grid h-12 place-items-center rounded bg-slate-950/15 text-center text-[0.68rem] font-black uppercase leading-tight">
                           {cardName(selectedPlayer)}
                         </div>
                         {selectedPlayer ? (
-                          <p className="mt-1 text-center text-[0.62rem] font-black">
-                            FIT {selectedPlayer.fitness}%
-                          </p>
+                          <div className="mt-1 flex items-center justify-center gap-1">
+                            {[0, 1, 2].map((dot) => (
+                              <span
+                                key={dot}
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  dot < (chemistryItem?.chemistry ?? 0)
+                                    ? "bg-teal-700"
+                                    : "bg-slate-950/30"
+                                }`}
+                              />
+                            ))}
+                          </div>
                         ) : (
                           <p className="mt-1 text-center text-[0.62rem] font-black text-teal-200">
                             DROP

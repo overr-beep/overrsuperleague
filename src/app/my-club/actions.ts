@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { buildStarterSquadRows } from "@/utils/starterSquad";
-import { getFormationSlots, isFormationName, validateLineupShape } from "@/utils/formations";
+import {
+  calculateChemistry,
+  getFormationSlots,
+  isFormationName,
+  validateLineupShape,
+} from "@/utils/formations";
 
 export type MyClubActionState = {
   error: string | null;
@@ -308,10 +313,26 @@ export async function saveLineupAction(
     return { error: error.message, success: null };
   }
 
+  const chemistry = calculateChemistry(orderedStarters, requiredSlots);
+  const attackSlots = new Set(["LM", "RM", "LW", "RW", "CAM", "ST"]);
+  const defenseSlots = new Set(["BR", "LB", "RB", "CB", "CDM"]);
+  const formationAttack = chemistry.reduce((sum, item, index) => {
+    return attackSlots.has(requiredSlots[index])
+      ? sum + item.fit.effectiveOverall + item.chemistry
+      : sum;
+  }, 0);
+  const formationDefense = chemistry.reduce((sum, item, index) => {
+    return defenseSlots.has(requiredSlots[index])
+      ? sum + item.fit.effectiveOverall + item.chemistry
+      : sum;
+  }, 0);
+
   await supabase
     .from("clubs")
     .update({
       formation,
+      formation_attack: formationAttack,
+      formation_defense: formationDefense,
       last_lineup_saved_at: new Date().toISOString(),
     })
     .eq("id", club.id);

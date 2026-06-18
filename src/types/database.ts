@@ -1,7 +1,23 @@
 export type ProfileRole = "admin" | "manager";
 export type MatchStatus = "scheduled" | "played" | "postponed";
 export type TransferStatus = "rumor" | "pending" | "completed" | "cancelled";
-export type PlayerPosition = "BR" | "OBR" | "POM" | "NAP" | string;
+export type PlayerPosition =
+  | "BR"
+  | "LB"
+  | "RB"
+  | "CB"
+  | "CM"
+  | "CDM"
+  | "CAM"
+  | "ST"
+  | "LW"
+  | "RW"
+  | "LM"
+  | "RM"
+  | "OBR"
+  | "POM"
+  | "NAP"
+  | string;
 export type LineupRole = "starter" | "bench";
 
 export type Profile = {
@@ -38,8 +54,22 @@ export type Player = {
   first_name: string;
   last_name: string;
   position: PlayerPosition;
+  nominal_position: PlayerPosition | null;
+  nationality: string;
   age: number;
   overall: number;
+  pac: number;
+  sho: number;
+  pas: number;
+  dri: number;
+  def: number;
+  phy: number;
+  div: number;
+  han: number;
+  kic: number;
+  ref: number;
+  spd: number;
+  pos: number;
   attack_rating: number;
   defense_rating: number;
   fitness: number;
