@@ -12,7 +12,6 @@ import {
   calculateChemistry,
   FORMATIONS,
   getFormationSlots,
-  getNominalPosition,
   getPositionFit,
   isAvailableForMatch,
 } from "@/utils/formations";
@@ -23,7 +22,12 @@ const initialActionState: MyClubActionState = {
   success: null,
 };
 
-const pitchLines = ["NAP", "POM", "OBR", "BR"] as const;
+const pitchLines = [
+  ["ST", "LW", "RW"],
+  ["LM", "RM", "CM", "CDM", "CAM"],
+  ["LB", "RB", "CB"],
+  ["BR"],
+] as const;
 type DragPayload = { source: "slot"; index: number } | { source: "player"; id: string };
 
 function sortByOverall(players: Player[]) {
@@ -42,7 +46,6 @@ function buildStarterIds(
     const preferred = players.find(
       (player) =>
         player.id === preferredIds[index] &&
-        getNominalPosition(player) === slot &&
         isAvailableForMatch(player, currentRound) &&
         !usedIds.has(player.id),
     );
@@ -52,12 +55,16 @@ function buildStarterIds(
       return preferred.id;
     }
 
-    const fallback = sortByOverall(players).find(
-      (player) =>
-        getNominalPosition(player) === slot &&
-        isAvailableForMatch(player, currentRound) &&
-        !usedIds.has(player.id),
-    );
+    const fallback = sortByOverall(players)
+      .filter(
+        (player) =>
+          isAvailableForMatch(player, currentRound) && !usedIds.has(player.id),
+      )
+      .sort((a, b) => {
+        const fitA = getPositionFit(a, slot);
+        const fitB = getPositionFit(b, slot);
+        return fitA.penaltyPercent - fitB.penaltyPercent || b.overall - a.overall;
+      })[0];
 
     if (!fallback) {
       return "";
@@ -456,14 +463,14 @@ export function LineupForm({
           <div className="absolute bottom-6 left-1/2 h-16 w-40 -translate-x-1/2 rounded-t-md border-x-2 border-t-2 border-white/35" />
 
           <div className="relative z-10 grid min-h-[560px] grid-rows-[1fr_1fr_1fr_1fr] gap-2 p-6">
-            {pitchLines.map((line) => {
-              const indexedSlots = formationSlots
-                .map((slot, index) => ({ slot, index }))
-                .filter((item) => item.slot === line);
+              {pitchLines.map((linePositions) => {
+                const indexedSlots = formationSlots
+                  .map((slot, index) => ({ slot, index }))
+                  .filter((item) => (linePositions as readonly string[]).includes(item.slot));
 
-              return (
-                <div
-                  key={line}
+                return (
+                  <div
+                    key={linePositions.join("-")}
                   className="flex min-w-0 flex-wrap items-center justify-center gap-3"
                 >
                   {indexedSlots.map(({ slot, index }) => {
